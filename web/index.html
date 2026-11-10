@@ -126,7 +126,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.2';
+const VERSION='1.0.3';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -236,7 +236,7 @@ function newGame(opt){
   // מיקום איים
   const pts=[];let minD=Math.sqrt(area/N)*.72,tries=0;const M=110;
   while(pts.length<N){tries++;const p={x:rnd(M,W-M),y:rnd(M,H-M)};if(pts.every(q=>dist(p,q)>minD))pts.push(p);if(tries%2500===0)minD*=.92;}
-  const C={x:W/2,y:H/2};pts.sort((a,b)=>dist(a,C)-dist(b,C));
+  const C={x:W/2,y:H/2};shuffle(pts); // איי מרכז מפוזרים אקראית
   const nC=Math.round(N/4),cpat=['stone','wood','wood','iron'],rr=shuffle(['wood','stone','iron']);
   const nidx=shuffle(NAMES.map((_,i)=>i));const regTypes=[];for(let i=0;i<N-nC;i++)regTypes.push(rr[i%3]);shuffle(regTypes);
   pts.forEach((p,i)=>{const center=i<nC;const res=center?cpat[i%4]:regTypes[i-nC];
@@ -695,7 +695,7 @@ const st=`<table class="t"><tr><th>${L('ספינה','Ship')}</th><th>${L('מטע
 if(LANG==='en')return `<div class="ttl">How to play</div><div class="help">
 <h4>🎯 Goal</h4><p>Be the first to hold ${tg} islands with a fortress on each one. A player whose islands are all bought is out.</p>
 <h4>🖐 Controls</h4><p>Drag to move the map, pinch with two fingers to zoom. Tap one of your ships to select it, then tap an island or the sea to send it. Tap an island to see its details.</p>
-<h4>🏝 Islands</h4><p>There are wood, stone and iron islands. A regular island produces 12–19 a day. The dark islands in the middle are central islands: they cannot be bought, but they produce 20–35 a day and you can collect from them.</p>
+<h4>🏝 Islands</h4><p>There are wood, stone and iron islands. A regular island produces 12–19 a day. The dark islands, scattered around the map, are central islands: they cannot be bought, but they produce 20–35 a day and you can collect from them.</p>
 <p>To buy a free island, send a Pinasse to it. It costs 200 gold, 200 wood and 200 stone, takes 10 seconds, and the Pinasse is used up. Each island you own costs 4 gold a day, and its production goes straight to your stock.</p>
 <p>From islands that are not yours, cargo ships collect the goods and bring them to your nearest island.</p>
 <h4>🏠 Buildings</h4>${bt}
@@ -708,7 +708,7 @@ if(LANG==='en')return `<div class="ttl">How to play</div><div class="help">
 return `<div class="ttl">הוראות</div><div class="help">
 <h4>🎯 המטרה</h4><p>להיות הראשון שמחזיק ${tg} איים, ועל כל אחד מהם מבצר. שחקן שכל האיים שלו נקנו – מודח.</p>
 <h4>🖐 שליטה</h4><p>גרירה מזיזה את המפה, צביטה בשתי אצבעות מגדילה ומקטינה. הקשה על ספינה שלך בוחרת אותה, ואז הקשה על אי או על הים שולחת אותה. הקשה על אי פותחת את פרטיו.</p>
-<h4>🏝 איים</h4><p>יש איי עץ, אבן וברזל. אי רגיל מייצר 12–19 ליום. האיים השחורים במרכז הם איי מרכז: אי אפשר לקנות אותם, אבל הם מייצרים 20–35 ליום ואפשר לאסוף מהם.</p>
+<h4>🏝 איים</h4><p>יש איי עץ, אבן וברזל. אי רגיל מייצר 12–19 ליום. האיים השחורים הם איי מרכז, והם מפוזרים במפה: אי אפשר לקנות אותם, אבל הם מייצרים 20–35 ליום ואפשר לאסוף מהם.</p>
 <p>כדי לקנות אי פנוי שולחים אליו פינאס. הקנייה עולה 200 כסף, 200 עץ ו-200 אבן, לוקחת 10 שניות, והפינאס נעלמת. כל אי שלך עולה 4 כסף ליום, והייצור שלו נכנס ישר למלאי.</p>
 <p>מאיים שאינם שלך אוספים סחורה עם ספינות משא, שמביאות אותה לאי הקרוב שלך.</p>
 <h4>🏠 מבנים</h4>${bt}
