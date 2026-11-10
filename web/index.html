@@ -62,6 +62,17 @@ input[type=range]{width:100%;accent-color:#c8661c;height:28px}
 .help h4{margin:10px 0 3px}
 .help p,.help li{margin:2px 0;font-size:14px}
 table.t{border-collapse:collapse;font-size:13px;width:100%}
+.stock{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 12px;background:rgba(138,90,36,.12);border:1px solid #b89458;border-radius:9px;padding:4px 8px;margin:0 0 6px;font-weight:bold;font-size:15px}
+.stock span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.btn.mkr{line-height:1.25;padding:5px 9px}
+@media (max-height:430px){
+ .parch{padding:8px 12px;max-height:96vh}.ttl{font-size:16px;padding:2px 14px;margin-bottom:5px}.close{width:30px;height:30px;line-height:24px;font-size:17px}
+ .card{padding:4px 7px;margin:4px 0}.card b{font-size:14px}.small{font-size:11.5px}.btn{font-size:14px;padding:5px 10px}
+ .btn.big{font-size:16px;padding:7px 18px;margin:5px auto}.logo{font-size:34px}.stock{font-size:13.5px;padding:3px 6px}
+ .hb{width:36px;height:32px;font-size:17px}#dayTxt{font-size:16px}
+ .rs{font-size:14px;min-width:34px}.rs .ic{width:20px;height:18px}#resbar{gap:9px;padding:2px 8px}#goal{font-size:12px}
+}
+@media (max-width:700px){#resbar{left:auto;right:auto;left:50%;gap:6px}.rs{min-width:30px;font-size:13px}#goal{font-size:11px;max-width:60vw;overflow:hidden;text-overflow:ellipsis}}
 table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center}
 </style>
 </head>
@@ -115,7 +126,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.1';
+const VERSION='1.0.2';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -237,7 +248,7 @@ function newGame(opt){
   for(let i=0;i<opt.players;i++){const a=off+i*Math.PI*2/opt.players;let p={x:W/2+Math.cos(a)*(W/2-80),y:H/2+Math.sin(a)*(H/2-80)};
     for(let k=0;k<40&&G.islands.some(is=>dist(is,p)<is.r+50);k++){p.x+=rnd(-60,60);p.y+=rnd(-60,60);p.x=clamp(p.x,40,W-40);p.y=clamp(p.y,40,H-40);}starts.push(p);}
   if(opt.pirates){const irons=G.islands.filter(i=>!i.center&&i.res==='iron');
-    irons.sort((a,b)=>Math.min(...starts.map(s=>dist(s,b)))-Math.min(...starts.map(s=>dist(s,a))));
+    irons.sort((a,b)=>dist(a,C)-dist(b,C));
     const pi=irons[Math.floor(Math.random()*Math.min(2,irons.length))]||irons[0];if(pi){pi.pirate=true;G.pir.island=pi;}else G.pir.dead=true;}
   G.players.forEach((P,i)=>{const s=spawnShip('pinasse',i,starts[i].x,starts[i].y);s.a=Math.atan2(H/2-s.y,W/2-s.x);});
   for(let i=0;i<3;i++){let p,k=0;do{p={x:rnd(80,W-80),y:rnd(80,H-80)};k++;}while(k<200&&(G.islands.some(is=>dist(is,p)<is.r+70)||starts.some(s=>dist(s,p)<250)));
@@ -588,14 +599,15 @@ function chooseShip(types,target){const s=G.sel;if(s&&s.owner===0&&types.include
   const idle=c.filter(q=>!q.order),pool=idle.length?idle:c.filter(q=>!q.order||q.order.kind==='collect'||q.order.kind==='move');if(!pool.length)return null;
   pool.sort((a,b)=>dist(a,target)-dist(b,target));return pool[0];}
 const uiOpen=()=>!$('panel').classList.contains('hidden')||!$('modal').classList.contains('hidden');
-function openPanel(ui){G.ui=ui;if(ui.type==='island'&&!ui.mk)ui.mk={mode:'sell',res:'wood',amt:0};renderPanel();$('panel').classList.remove('hidden');}
+function openPanel(ui){G.ui=ui;if(ui.type==='island'&&!ui.mk)ui.mk={mode:'sell',res:'wood',amt:0};renderPanel();$('panel').classList.remove('hidden');if(ui.tab==='mk')mkLabel();}
 function closePanel(){$('panel').classList.add('hidden');if(G)G.ui=null;}
 function btn(act,label,dis,v){return `<button class="btn" data-act="${act}" ${v!==undefined?`data-v="${v}"`:''} ${dis?'disabled':''}>${label}</button>`;}
 function ownerTxt(is){if(is.pirate)return L('<b>☠️ אי השודדים</b>','<b>☠️ Pirate island</b>');if(is.owner<0)return is.center?L('אי מרכזי – לא ניתן לקנייה','Central island – cannot be bought'):L('אי פנוי','Free island');
   const P=G.players[is.owner];return `<span class="badge" style="background:${P.color}"></span> ${P.human?L('שלך','yours'):P.name}`;}
+function stockHtml(P){return `<div class="stock"><span>${L('המלאי שלך','Your stock')}:</span>${RES.map(r=>`<span class="${r==='gold'&&P.broke?'red':''}">${ic(r,18)} ${fmt(P.res[r])}</span>`).join('')}</div>`;}
 function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-act="close">✕</div>';
   if(ui.type==='island'){const is=ui.is;const tn=L({wood:'אי עץ',stone:'אי אבן',iron:'אי ברזל'},{wood:'Wood island',stone:'Stone island',iron:'Iron island'})[is.res];
-    h+=`<div class="ttl">${is.name}</div><div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`;
+    h+=`<div class="ttl">${is.name}</div>`+(is.owner===0?'':`<div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`);
     const sel=G.sel?`<div class="small">${L('ספינה נבחרת','Selected ship')}: ${SHIPS[G.sel.type].he}</div>`:'';
     if(is.pirate){h+=`<div class="row">${L('ייצור','Production')}: ${ic(is.res)} +${is.prod} ${L('ליום','/day')}</div><p>${L('אפשר לכבוש את אי השודדים רק עם ספינת מלחמה. ספינת מלחמה נבנית במספנה של אי שיש בו מבצר.','The pirate island can only be taken by a Warrior. A Warrior is built at the shipyard of an island with a fortress.')}</p>`+
       btn('attack',L('⚔️ שלח ספינת מלחמה','⚔️ Send Warrior'),!shipsOf(0).some(s=>s.type==='warrior'))+sel;}
@@ -609,7 +621,7 @@ function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-ac
       h+=`<div class="row">${L('שווי האי','Island value')}: <b>${fmt(v)}</b> ${ic('gold')}</div><div class="row small">${L('מבנים','Buildings')}: ${BKEYS.filter(k=>is.b[k]).map(k=>BLD[k].he).join(', ')||L('אין','none')}</div>`;
       h+=`<div class="card"><div class="grow"><b>${L('קניית האי בדיפלומט','Buy with a diplomat')}</b><div class="small">${L('הדיפלומט ישלם את שווי האי כשיגיע אליו, ונעלם אחרי הקנייה.','The diplomat pays the island value when it arrives, and is used up by the purchase.')}</div></div>${btn('bribe',L('🤝 שלח דיפלומט','🤝 Send diplomat'),!shipsOf(0).some(s=>s.type==='diplomat'))}</div>`+sel;}
     else{const d=islandDaily(is);
-      h+=`<div class="row">${L('שווי','Value')}: <b>${fmt(islandValue(is))}</b> ${ic('gold',16)} · ${L('ייצור יומי','Daily production')}: <b>+${d.p}</b> ${ic(is.res,16)} · ${L('כסף ליום','Gold per day')}: <b class="${d.g<0?'red':'green'}">${d.g>0?'+':''}${d.g}</b> ${ic('gold',16)}</div>`;
+      h+=`<div class="row"><b>${tn}</b> · ${L('שווי','Value')}: <b>${fmt(islandValue(is))}</b> ${ic('gold',16)} · ${L('ייצור יומי','Daily production')}: <b>+${d.p}</b> ${ic(is.res,16)} · ${L('כסף ליום','Gold per day')}: <b class="${d.g<0?'red':'green'}">${d.g>0?'+':''}${d.g}</b> ${ic('gold',16)}</div>`;
       if(G.sel)h+=`<div class="row">${btn('move',L(`⚓ שלח לכאן את ה${SHIPS[G.sel.type].he}${G.sel.cargo?' ופרוק':''}`,`⚓ Send the ${SHIPS[G.sel.type].he} here${G.sel.cargo?' and unload':''}`))}</div>`;
       h+=`<div class="tabs">${btn('tab',L('🏠 מבנים','🏠 Buildings'),0,'bld').replace('class="btn"',`class="btn ${ui.tab==='bld'?'on':''}"`)}${btn('tab',L('⚖️ שוק','⚖️ Market'),0,'mk').replace('class="btn"',`class="btn ${ui.tab==='mk'?'on':''}"`)}${btn('tab',L('⛵ מספנה','⛵ Shipyard'),0,'sy').replace('class="btn"',`class="btn ${ui.tab==='sy'?'on':''}"`)}</div>`;
       if(ui.tab==='bld'){for(const k of BKEYS){const B=BLD[k];let st;
@@ -628,13 +640,14 @@ function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-ac
   else if(ui.type==='sound')h+=soundHtml();
   else if(ui.type==='log')h+=`<div class="ttl">${L('יומן','Log')}</div>`+G.log.slice().reverse().map(l=>`<div class="small">${L('יום','Day')} ${l.d}: ${l.t}</div>`).join('');
   else if(ui.type==='quit')h+=`<div class="ttl">${L('יציאה','Exit')}</div><p style="text-align:center">${L('לצאת מהמשחק? המשחק הנוכחי לא יישמר.','Leave the game? The current game will not be saved.')}</p><div style="text-align:center">${btn('quitYes',L('כן, צא','Yes, exit'))}${btn('resume',L('לא','No'))}</div>`;
+  if(ui.type==='island'||ui.type==='wreck'){const k=h.indexOf('</div>',h.indexOf('class="ttl"'))+6;h=h.slice(0,k)+stockHtml(P)+h.slice(k);}
   $('panelBox').innerHTML=h;}
 function marketHtml(mk,P){const price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const max=mk.mode==='sell'?Math.floor(P.res[mk.res]):Math.floor(P.res.gold/price);mk.amt=Math.min(mk.amt,max);
   return `<div class="tabs">${btn('mkmode',L('מכירה','Sell'),0,'sell').replace('class="btn"',`class="btn ${mk.mode==='sell'?'on':''}"`)}${btn('mkmode',L('קנייה','Buy'),0,'buy').replace('class="btn"',`class="btn ${mk.mode==='buy'?'on':''}"`)}</div>
-  <div class="tabs">${['wood','stone','iron','steel'].map(r=>`<button class="btn ${mk.res===r?'on':''}" data-act="mkres" data-v="${r}">${ic(r,20)} ${mk.mode==='sell'?SELL[r]:BUY[r]}${ic('gold',14)}</button>`).join('')}</div>
-  <input type="range" id="mkAmt" min="0" max="${max}" step="1" value="${mk.amt}">
-  <div class="row" style="justify-content:center"><b id="mkLbl"></b>${btn('mkdo',L('✔ אישור','✔ OK'))}</div>`;}
-function mkLabel(){const mk=G.ui.mk,price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const e=$('mkLbl');if(e)e.innerHTML=L(`${mk.mode==='sell'?'מכור':'קנה'} ${mk.amt} ${RHE[mk.res]} ב-${fmt(mk.amt*price)} ${ic('gold',16)}`,`${mk.mode==='sell'?'Sell':'Buy'} ${mk.amt} ${RHE[mk.res]} for ${fmt(mk.amt*price)} ${ic('gold',16)}`);}
+  <div class="tabs">${['wood','stone','iron','steel'].map(r=>{const none=mk.mode==='sell'?P.res[r]<1:P.res.gold<BUY[r];return `<button class="btn mkr ${mk.res===r?'on':''}" data-act="mkres" data-v="${r}" ${none?'disabled':''}>${ic(r,20)} <span class="small">${L('מחיר','price')}</span> ${mk.mode==='sell'?SELL[r]:BUY[r]}${ic('gold',14)}<br><span class="small">${L('יש לך','you have')} ${fmt(P.res[r])}</span></button>`;}).join('')}</div>
+  ${max>0?`<input type="range" id="mkAmt" min="0" max="${max}" step="1" value="${mk.amt}">
+  <div class="row" style="justify-content:center"><b id="mkLbl"></b>${btn('mkdo',L('✔ אישור','✔ OK'),mk.amt<=0)}</div>`:`<p style="text-align:center" class="red"><b>${mk.mode==='sell'?L(`אין לך ${RHE[mk.res]} למכירה`,`You have no ${RHE[mk.res]} to sell`):L('אין לך מספיק כסף לקנייה','Not enough gold to buy')}</b></p>`}`;}
+function mkLabel(){const mk=G.ui.mk,price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const e=$('mkLbl');const ok=document.querySelector('[data-act="mkdo"]');if(ok)ok.disabled=mk.amt<=0;if(e)e.innerHTML=L(`${mk.mode==='sell'?'מכור':'קנה'} ${mk.amt} ${RHE[mk.res]} ב-${fmt(mk.amt*price)} ${ic('gold',16)}`,`${mk.mode==='sell'?'Sell':'Buy'} ${mk.amt} ${RHE[mk.res]} for ${fmt(mk.amt*price)} ${ic('gold',16)}`);}
 function act(a,v){const P=HUMAN(),ui=G.ui,is=ui&&ui.is;sfx('tap');
   switch(a){
   case 'close':case 'resume':closePanel();return;
@@ -649,7 +662,7 @@ function act(a,v){const P=HUMAN(),ui=G.ui,is=ui&&ui.is;sfx('tap');
   case 'move':if(G.sel){order(G.sel,'move',is);closePanel();}return;
   case 'mkmode':ui.mk.mode=v;ui.mk.amt=0;break;
   case 'mkres':ui.mk.res=v;ui.mk.amt=0;break;
-  case 'mkdo':{const mk=ui.mk;if(mk.amt<=0)return;if(mk.mode==='sell'){if(P.res[mk.res]<mk.amt)return;P.res[mk.res]-=mk.amt;P.res.gold+=mk.amt*SELL[mk.res];}
+  case 'mkdo':{const mk=ui.mk;mk.amt=Math.floor(mk.amt);if(!(mk.amt>0))return;if(mk.mode==='sell'){if(P.res[mk.res]<mk.amt){toast(L('אין לך מספיק מלאי','Not enough stock'));return;}P.res[mk.res]-=mk.amt;P.res.gold+=mk.amt*SELL[mk.res];}
     else{const c=mk.amt*BUY[mk.res];if(P.res.gold<c)return;P.res.gold-=c;P.res[mk.res]+=mk.amt;}sfx('coins');mk.amt=0;updHud();break;}
   case 'sound':case 'help':case 'about':G.ui={type:a};break;
   case 'quit':G.ui={type:'quit'};break;
