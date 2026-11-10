@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>איי הזהב</title>
+<style>
+html{--dir:rtl}html[dir=ltr]{--dir:ltr}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#1b3a57;font-family:"Segoe UI",Arial,sans-serif;color:#3b2a14;touch-action:none}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:20}
+.dim{background:rgba(8,24,40,.45)}
+.parch{background:linear-gradient(135deg,#f7ebcd,#e6cf9d);border:3px solid #8a5a24;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.5);padding:12px 16px;width:min(620px,94vw);max-height:92vh;overflow:auto;position:relative}
+.ttl{background:#fff8e6;border:2px solid #c8661c;border-radius:8px;padding:3px 18px;font-size:19px;font-weight:bold;text-align:center;margin:0 auto 8px;width:max-content;max-width:80%}
+.btn{background:linear-gradient(#fff6dc,#e6cf98);border:2px solid #8a5a24;border-radius:9px;padding:7px 12px;font-size:15px;font-weight:bold;color:#3b2a14;margin:3px;font-family:inherit}
+.btn:active{transform:scale(.96)}
+.btn[disabled]{opacity:.4}
+.btn.on{background:linear-gradient(#ffd98a,#e7a948);border-color:#a5561a}
+.btn.big{font-size:19px;padding:11px 22px;min-width:220px;display:block;margin:7px auto}
+.close{position:absolute;top:6px;left:6px;width:34px;height:34px;border-radius:8px;background:#b8321c;color:#fff;border:2px solid #6d1a0c;font-size:19px;font-weight:bold;line-height:28px;text-align:center;z-index:2}
+.ic{display:inline-block;vertical-align:middle}
+.ic svg{width:100%;height:100%;display:block}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0}
+.card{border:1px solid #b89458;border-radius:9px;padding:6px 9px;margin:6px 0;background:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px}
+.card .grow{flex:1;min-width:0}
+.card b{font-size:15px}
+.small{font-size:12.5px;opacity:.85}
+.cost{white-space:nowrap;font-size:14px}
+.cost span.n{margin-inline-start:6px}
+.red{color:#b3261e}.green{color:#1f7a1f}
+.tabs{display:flex;justify-content:center;gap:4px;margin:4px 0 6px}
+.badge{display:inline-block;width:13px;height:13px;border-radius:50%;border:2px solid #333;vertical-align:middle}
+/* HUD */
+#hud{position:fixed;inset:0;pointer-events:none;z-index:10;direction:ltr}
+#hud *{pointer-events:auto}
+#dayBox{position:absolute;left:10px;bottom:8px;color:#fff;text-shadow:0 1px 3px #000}
+#dayTxt{font-size:19px;font-weight:bold;font-family:Georgia,serif;margin-bottom:3px}
+.hb{width:42px;height:38px;border:none;background:rgba(0,0,0,.18);border-radius:8px;color:#fff;font-size:20px;margin-inline-end:3px}
+.hb.on{background:rgba(255,200,60,.55)}
+#resbar{position:absolute;left:50%;transform:translateX(-50%);bottom:4px;background:linear-gradient(#f0dcae,#d9bb80);border:3px solid #8a5a24;border-radius:12px 12px 8px 8px;padding:3px 12px;display:flex;gap:14px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.rs{display:flex;flex-direction:column;align-items:center;min-width:42px;font-family:Georgia,serif;font-size:17px;line-height:1}
+.rs .ic{width:24px;height:22px}
+.rs.broke{color:#c62828}
+#rbtns{position:absolute;right:8px;bottom:8px;display:flex;gap:4px}
+#goal{position:absolute;top:6px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.35);color:#fff;padding:3px 12px;border-radius:12px;font-size:14px;direction:var(--dir);white-space:nowrap}
+#selbar{position:absolute;top:36px;left:50%;transform:translateX(-50%);background:rgba(247,235,205,.95);border:2px solid #8a5a24;border-radius:10px;padding:4px 10px;font-size:14px;direction:var(--dir);display:flex;align-items:center;gap:6px;max-width:94vw}
+#toast{position:absolute;top:70px;left:50%;transform:translateX(-50%);background:rgba(20,20,20,.8);color:#fff;padding:7px 14px;border-radius:10px;font-size:15px;direction:var(--dir);opacity:0;transition:opacity .3s;pointer-events:none;max-width:90vw;text-align:center}
+/* menu */
+#mainMenu{background:radial-gradient(ellipse at center,rgba(40,100,150,.35),rgba(8,24,40,.75))}
+.logo{font-family:Georgia,serif;font-size:44px;color:#ffe08a;text-shadow:0 3px 0 #8a5a24,0 6px 14px #000;text-align:center;margin-bottom:6px}
+.ver{color:#dfe9f2;text-align:center;font-size:13px;margin-top:6px}
+input[type=range]{width:100%;accent-color:#c8661c;height:28px}
+.lbl{display:flex;justify-content:space-between;font-weight:bold;margin-top:6px}
+.val{background:#ffe27a;border:2px solid #c8661c;border-radius:8px;padding:0 10px;min-width:44px;text-align:center}
+.chk{display:inline-flex;align-items:center;gap:6px;margin:6px 10px 2px 0;font-weight:bold;font-size:16px}
+.chk input{width:22px;height:22px;accent-color:#c8661c}
+.about-top{display:flex;align-items:center;justify-content:center;gap:12px;margin:6px 0 10px}
+.about-top img{width:72px;height:72px;border-radius:16px;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.bsd{font-weight:bold;font-size:18px;align-self:flex-start}
+.help h4{margin:10px 0 3px}
+.help p,.help li{margin:2px 0;font-size:14px}
+table.t{border-collapse:collapse;font-size:13px;width:100%}
+table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="goal"></div>
+  <div id="selbar" class="hidden"></div>
+  <div id="toast"></div>
+  <div id="dayBox"><div id="dayTxt"></div>
+    <button class="hb" id="bPause">⏸</button><button class="hb" id="bPlay">▶</button><button class="hb" id="bFast">⏩</button>
+  </div>
+  <div id="resbar"></div>
+  <div id="rbtns"><button class="hb" id="bHelp">?</button><button class="hb" id="bLog">📜</button><button class="hb" id="bMenu">⚙</button></div>
+</div>
+
+<div id="mainMenu" class="screen">
+  <div>
+    <div class="logo" data-t="title"></div>
+    <button class="btn big" data-go="setup" data-t="mRandom"></button>
+    <button class="btn big" id="bLevels" data-t="mLevels"></button>
+    <button class="btn big" data-go="sound" data-t="mSettings"></button>
+    <button class="btn big" data-go="help" data-t="mHelp"></button>
+    <button class="btn big" data-go="about" data-t="mAbout"></button>
+    <div class="ver" id="verTxt"></div>
+  </div>
+</div>
+
+<div id="setup" class="screen dim hidden">
+  <div class="parch">
+    <div class="close" data-go="mainMenu">✕</div>
+    <div class="ttl" data-t="sTitle"></div>
+    <div class="lbl"><span data-t="sIsl"></span><span class="val" id="vIsl">16</span></div>
+    <input type="range" id="sIsl" min="8" max="60" step="1" value="16">
+    <div class="lbl"><span data-t="sPl"></span><span class="val" id="vPl">2</span></div>
+    <input type="range" id="sPl" min="2" max="8" step="1" value="2">
+    <div class="lbl"><span data-t="sDiff"></span></div>
+    <div class="tabs" id="diffBtns">
+      <button class="btn" data-diff="0" data-t="d0"></button><button class="btn on" data-diff="1" data-t="d1"></button><button class="btn" data-diff="2" data-t="d2"></button>
+    </div>
+    <label class="chk"><input type="checkbox" id="cPir" checked> <span data-t="sPir"></span></label>
+    <label class="chk"><input type="checkbox" id="cHid" checked> <span data-t="sHid"></span></label>
+    <button class="btn big" id="bStart" data-t="sStart"></button>
+  </div>
+</div>
+
+<div id="info" class="screen dim hidden"><div class="parch" id="infoBox"></div></div>
+<div id="panel" class="screen dim hidden"><div class="parch" id="panelBox"></div></div>
+<div id="modal" class="screen dim hidden" style="z-index:30"><div class="parch" id="modalBox" style="width:min(460px,92vw);text-align:center"></div></div>
+
+<script>
+'use strict';
+const VERSION='1.0.1';
+const DAY=4;                 // שניות ליום
+const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
+const RES=['gold','wood','stone','iron','steel'];
+let LANG='he';try{LANG=localStorage.getItem('gi_lang')||'he';}catch(e){}
+const L=(h,e)=>LANG==='en'?e:h;
+const RHE={get gold(){return L('כסף','gold')},get wood(){return L('עץ','wood')},get stone(){return L('אבן','stone')},get iron(){return L('ברזל','iron')},get steel(){return L('פלדה','steel')}};
+const ICON={
+gold:'<svg viewBox="0 0 24 24"><ellipse cx="12" cy="18" rx="9" ry="4" fill="#b8860b"/><ellipse cx="12" cy="15" rx="9" ry="4" fill="#e0ad22"/><ellipse cx="12" cy="11.5" rx="9" ry="4" fill="#f7d34a" stroke="#a87a0c"/><ellipse cx="12" cy="11" rx="4" ry="1.5" fill="#fff3a0"/></svg>',
+wood:'<svg viewBox="0 0 24 24"><rect x="1" y="12" width="19" height="6.5" rx="3" fill="#a8743a"/><circle cx="20" cy="15.2" r="3.2" fill="#e2c08a" stroke="#7a5022"/><rect x="3" y="5.5" width="17" height="6.5" rx="3" fill="#b9843f"/><circle cx="20" cy="8.7" r="3.2" fill="#e9c993" stroke="#7a5022"/></svg>',
+stone:'<svg viewBox="0 0 24 24"><path d="M2 19l3-7 7-2 5 3 5 6z" fill="#b8bcc2" stroke="#6b7078"/><path d="M7 12l3-7 6 2 1 6z" fill="#e3e6ea" stroke="#6b7078"/></svg>',
+iron:'<svg viewBox="0 0 24 24"><path d="M2 19c0-6 4-10 10-10s10 4 10 10z" fill="#5a3f5e" stroke="#2e1f30"/><circle cx="8" cy="15" r="1.8" fill="#b07a9e"/><circle cx="15" cy="13" r="1.5" fill="#b07a9e"/><circle cx="12" cy="17" r="1.2" fill="#c98bb4"/></svg>',
+steel:'<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="3" fill="#cfd6dd" stroke="#77818b"/><rect x="8" y="5" width="3" height="14" rx="1.5" fill="#fff" opacity=".8"/></svg>'};
+const ic=(r,s=18)=>`<span class="ic" style="width:${s}px;height:${s}px">${ICON[r]}</span>`;
+const BLD={
+ market:{h:'שוק',en:'Marketplace',cost:{wood:50,stone:25},time:5,daily:20,dh:'מאפשר לקנות ולמכור סחורות',de:"Allows buying and selling goods"},
+ miner:{h:'בית כורים',en:"Miner's House",cost:{gold:200,wood:50,stone:25},time:8.5,daily:-16,dh:'מכפיל את תפוקת האי',de:"Doubles the island's production"},
+ foundry:{h:'בית יציקה',en:'Foundry',cost:{gold:250,wood:100,stone:100},time:10,daily:-20,dh:'מייצר 4 פלדה ליום מברזל (ביחס 2:1)',de:"Makes 4 steel a day from iron (2:1)"},
+ shipyard:{h:'מספנה',en:'Shipyard',cost:{gold:100,wood:50,stone:25},time:7,daily:-8,dh:'מאפשרת לבנות ספינות',de:"Allows building ships"},
+ fortress:{h:'מבצר',en:'Fortress',cost:{gold:1000,wood:200,stone:500,steel:100},time:20,daily:80,dh:'מטביע ספינות שודדים, נדרש לדיפלומט ולספינת מלחמה',de:"Sinks pirate ships; needed for the Diplomat and the Warrior"}};
+const BKEYS=['market','miner','foundry','shipyard','fortress'];
+const LGET=o=>{for(const k in o){const x=o[k];Object.defineProperty(x,'he',{get(){return L(x.h,x.en)}});Object.defineProperty(x,'desc',{get(){return L(x.dh,x.de)}});}};LGET(BLD);
+const SHIPS={
+ cog:{h:'קוג',en:'Cog',cargo:25,speed:20,cost:{gold:200,wood:50},time:4,mass:1,len:17,masts:1,dh:'ספינת משא בסיסית, איטית וקטנה',de:"Basic cargo ship, slow and small"},
+ pinasse:{h:'פינאס',en:'Pinasse',cargo:100,speed:30,cost:{gold:600,wood:200,steel:50},time:7,mass:2.5,len:25,masts:2,dh:'ספינת המשא הגדולה. רק היא מיישבת איים',de:"The biggest cargo ship. Only it can settle islands"},
+ diplomat:{h:'דיפלומט',en:'Diplomat',cargo:0,speed:30,cost:{gold:1000,wood:200,steel:50},time:10,mass:1.6,len:21,masts:2,fort:1,dh:'קונה איים של יריבים',de:"Buys enemy islands"},
+ warrior:{h:'ספינת מלחמה',en:'Warrior',cargo:0,speed:10,cost:{gold:1500,wood:400,steel:100},time:20,mass:5,len:31,masts:3,fort:1,dh:'משמידה את אי השודדים',de:"Destroys the pirate island"},
+ pirate:{h:'ספינת שודדים',en:'Pirate ship',cargo:0,speed:10,mass:4,len:29,masts:3}};
+const SKEYS=['cog','pinasse','diplomat','warrior'];LGET(SHIPS);
+const SETTLE={gold:200,wood:200,stone:200}, SETTLE_TIME=10, EMPTY_UPKEEP=4;
+const SELL={wood:2,stone:3,iron:5,steel:20}, BUY={wood:3,stone:6,iron:15,steel:100};
+const COLORS=[['לבן','#ffffff','White'],['אדום','#e53935','Red'],['צהוב','#fdd835','Yellow'],['כחול','#1e88e5','Blue'],['סגול','#9c27b0','Purple'],['כתום','#fb8c00','Orange'],['ירוק','#43a047','Green'],['ורוד','#ec5f9a','Pink']];
+const NAMES=['אי האלמוגים','אי הצוקים','אי השחפים','אי הדקלים','אי המפרץ','אי הסלעים','אי הרוח','אי הענבר','אי הגלים','אי הצדפים','אי האורנים','אי המגדלור','אי החול','אי הנמל','אי הערפל','אי הזריחה','אי השקיעה','אי הדולפינים','אי הצב','אי הכוכב','אי הירח','אי הפנינה','אי האלון','אי הברושים','אי התאנה','אי הזית','אי המעיין','אי הגבעה','אי העמק','אי השונית','אי הלגונה','אי הסערה','אי השקט','אי הקשת','אי הנשר','אי היונה','אי העוגן','אי המצוק','אי הגפן','אי הרימון','אי התמר','אי הארז','אי השקד','אי הדייגים','אי המלח','אי הבזלת','אי הקורל','אי החצב','אי הכלנית','אי הנרקיס','אי הקנים','אי הצפון','אי הדרום','אי המזרח','אי המערב','אי הנחושת','אי הכסף','אי הזהב','אי האופק','אי התכלת'];
+const NAMES_EN=['Coral Isle','Cliff Isle','Gull Isle','Palm Isle','Bay Isle','Rock Isle','Wind Isle','Amber Isle','Wave Isle','Shell Isle','Pine Isle','Lighthouse Isle','Sand Isle','Harbor Isle','Mist Isle','Sunrise Isle','Sunset Isle','Dolphin Isle','Turtle Isle','Star Isle','Moon Isle','Pearl Isle','Oak Isle','Cypress Isle','Fig Isle','Olive Isle','Spring Isle','Hill Isle','Valley Isle','Reef Isle','Lagoon Isle','Storm Isle','Calm Isle','Rainbow Isle','Eagle Isle','Dove Isle','Anchor Isle','Crag Isle','Vine Isle','Pomegranate Isle','Date Isle','Cedar Isle','Almond Isle','Fisher Isle','Salt Isle','Basalt Isle','Coralline Isle','Squill Isle','Anemone Isle','Narcissus Isle','Reed Isle','North Isle','South Isle','East Isle','West Isle','Copper Isle','Silver Isle','Gold Isle','Horizon Isle','Azure Isle'];
+
+const $=id=>document.getElementById(id);
+const rnd=(a,b)=>a+Math.random()*(b-a), rint=(a,b)=>Math.floor(rnd(a,b+1)), pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v, dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const fmt=n=>Math.floor(n).toLocaleString('en-US');
+function costHtml(c,P){return Object.keys(c).filter(k=>c[k]).map(k=>`<span class="cost ${P&&P.res[k]<c[k]?'red':''}"><span class="n">${c[k]}</span>${ic(k,16)}</span>`).join(' ');}
+const afford=(P,c)=>Object.keys(c).every(k=>P.res[k]>=c[k]);
+const pay=(P,c)=>{for(const k in c)P.res[k]-=c[k];};
+const addC=(a,b)=>{const r={...a};for(const k in b)r[k]=(r[k]||0)+b[k];return r;};
+
+/* ================= צלילים (נוצרים בקוד, בלי קבצים) ================= */
+const SND={cfg:{music:true,pirates:true,island:true,ship:true,ui:true},ctx:null,master:null,musicGain:null,musicOn:false,nextChord:0};
+try{Object.assign(SND.cfg,JSON.parse(localStorage.getItem('gi_sound')||'{}'));}catch(e){}
+function saveSnd(){try{localStorage.setItem('gi_sound',JSON.stringify(SND.cfg));}catch(e){}}
+function audioInit(){
+  if(SND.ctx){if(SND.ctx.state==='suspended')SND.ctx.resume();return;}
+  try{const AC=window.AudioContext||window.webkitAudioContext;SND.ctx=new AC();}catch(e){return;}
+  const c=SND.ctx;SND.master=c.createGain();SND.master.gain.value=.8;SND.master.connect(c.destination);
+  SND.musicGain=c.createGain();SND.musicGain.gain.value=0;SND.musicGain.connect(SND.master);
+  // רעש גלים עדין
+  const len=c.sampleRate*4,buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);let last=0;
+  for(let i=0;i<len;i++){last=(last+.02*(Math.random()*2-1))/1.02;d[i]=last*3.5;}
+  const src=c.createBufferSource();src.buffer=buf;src.loop=true;
+  const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=500;
+  const wg=c.createGain();wg.gain.value=.18;
+  const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.11;lg.gain.value=.1;lfo.connect(lg);lg.connect(wg.gain);lfo.start();
+  src.connect(lp);lp.connect(wg);wg.connect(SND.musicGain);src.start();
+  setMusic();
+}
+function setMusic(){if(!SND.ctx)return;const t=SND.ctx.currentTime;SND.musicGain.gain.cancelScheduledValues(t);SND.musicGain.gain.setTargetAtTime(SND.cfg.music?.55:0,t,.8);}
+const CHORDS=[[220,277.2,329.6],[196,246.9,293.7],[174.6,220,261.6],[196,246.9,329.6],[164.8,207.7,246.9],[220,261.6,329.6]];
+let chordI=0;
+function musicTick(){ // אקורדים רכים כל כמה שניות
+  if(!SND.ctx||!SND.cfg.music)return;const c=SND.ctx,t=c.currentTime;if(t<SND.nextChord)return;
+  SND.nextChord=t+7;const ch=CHORDS[chordI++%CHORDS.length];
+  ch.forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.05,t+2+i*.3);g.gain.linearRampToValueAtTime(0,t+7.5);
+    o.connect(g);g.connect(SND.musicGain);o.start(t);o.stop(t+7.6);});
+  if(Math.random()<.6){const f=pick(ch)*2,o=c.createOscillator(),g=c.createGain(),st=t+rnd(1,4);o.type='triangle';o.frequency.value=f;
+    g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(.035,st+.05);g.gain.exponentialRampToValueAtTime(.0005,st+2.2);o.connect(g);g.connect(SND.musicGain);o.start(st);o.stop(st+2.3);}
+}
+function tone(f,t0,dur,type,vol,f2){const c=SND.ctx,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+.02);g.gain.exponentialRampToValueAtTime(.0005,t0+dur);o.connect(g);g.connect(SND.master);o.start(t0);o.stop(t0+dur+.05);}
+function noise(t0,dur,vol,freq){const c=SND.ctx,n=c.sampleRate*dur,b=c.createBuffer(1,n,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+  const s=c.createBufferSource();s.buffer=b;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=freq||800;const g=c.createGain();
+  g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.0005,t0+dur);s.connect(f);f.connect(g);g.connect(SND.master);s.start(t0);}
+function sfx(kind){
+  if(!SND.ctx)return;const cat={pirate:'pirates',sink:'pirates',island:'island',build:'island',launch:'ship',tap:'ui',coins:'ui',win:'island',lose:'pirates'}[kind];
+  if(cat&&!SND.cfg[cat])return;const t=SND.ctx.currentTime+.01;
+  if(kind==='pirate'){for(let i=0;i<4;i++){tone(70,t+i*.28,.35,'sine',.5,40);noise(t+i*.28,.15,.25,300);}tone(146.8,t+.2,1.3,'sawtooth',.06);tone(155.6,t+.2,1.3,'sawtooth',.06);tone(110,t+1.2,1.2,'sawtooth',.07);}
+  else if(kind==='sink'){noise(t,1.4,.3,500);tone(300,t,1.2,'sine',.12,60);}
+  else if(kind==='island'){[523.3,659.3,784,1046.5].forEach((f,i)=>{tone(f,t+i*.13,1.4,'triangle',.12);tone(f*2,t+i*.13,.6,'sine',.03);});}
+  else if(kind==='build'){[392,523.3].forEach((f,i)=>tone(f,t+i*.1,.5,'triangle',.08));}
+  else if(kind==='launch'){tone(500,t,.5,'sine',.08,1200);tone(750,t+.15,.4,'sine',.05,1600);noise(t+.3,.9,.25,1200);tone(98,t+.3,.6,'sine',.2,60);}
+  else if(kind==='coins'){[1318,1568,1975].forEach((f,i)=>tone(f,t+i*.06,.25,'square',.03));}
+  else if(kind==='tap'){tone(660,t,.08,'sine',.05);}
+  else if(kind==='win'){[523.3,659.3,784,1046.5,784,1046.5].forEach((f,i)=>tone(f,t+i*.18,.8,'triangle',.13));}
+  else if(kind==='lose'){[392,349.2,311.1,261.6].forEach((f,i)=>tone(f,t+i*.3,.9,'triangle',.1));}
+}
+
+/* ================= מצב משחק ================= */
+let G=null; const cam={x:0,y:0,z:1}; let SW=0,SH=0,DPR=1; const cv=$('c'),ctx=cv.getContext('2d');
+const HUMAN=()=>G.players[0];
+const ownedBy=p=>G.islands.filter(i=>i.owner===p);
+const winTarget=()=>Math.min(10,Math.ceil(G.islands.length/2));
+
+function newGame(opt){
+  const N=opt.islands, area=N*230000, H=Math.sqrt(area/1.6), W=H*1.6;
+  G={W,H,time:0,day:1,dayT:0,speed:1,paused:false,islands:[],ships:[],wrecks:[],players:[],order:[],log:[],over:false,opt,nid:1,fx:[],sel:null,ui:null,visT:0,
+     pir:{island:null,ship:null,k:0,fails:{},cd:-1,started:false,dead:!opt.pirates,target:-1},waves:[]};
+  for(let i=0;i<opt.players;i++)G.players.push({id:i,human:i===0,get name(){return this.human?L('אתה','You'):L('מחשב ','Computer ')+COLORS[this.id][LANG==='en'?2:0]},color:COLORS[i][1],
+    res:{gold:500,wood:600,stone:500,iron:0,steel:0},broke:false,alive:true,had:false,raided:0,aiT:rnd(.5,2)});
+  // מיקום איים
+  const pts=[];let minD=Math.sqrt(area/N)*.72,tries=0;const M=110;
+  while(pts.length<N){tries++;const p={x:rnd(M,W-M),y:rnd(M,H-M)};if(pts.every(q=>dist(p,q)>minD))pts.push(p);if(tries%2500===0)minD*=.92;}
+  const C={x:W/2,y:H/2};pts.sort((a,b)=>dist(a,C)-dist(b,C));
+  const nC=Math.round(N/4),cpat=['stone','wood','wood','iron'],rr=shuffle(['wood','stone','iron']);
+  const nidx=shuffle(NAMES.map((_,i)=>i));const regTypes=[];for(let i=0;i<N-nC;i++)regTypes.push(rr[i%3]);shuffle(regTypes);
+  pts.forEach((p,i)=>{const center=i<nC;const res=center?cpat[i%4]:regTypes[i-nC];
+    const is={id:i,ni:nidx[i],get name(){return this.ni===undefined?L('אי ','Isle ')+(this.id+1):L(NAMES[this.ni],NAMES_EN[this.ni])},x:p.x,y:p.y,r:(center?rnd(44,54):rnd(36,48)),res,center,pirate:false,prod:center?rint(20,35):rint(12,19),
+      storage:0,owner:-1,b:{market:0,miner:0,foundry:0,shipyard:0,fortress:0},build:null,sbuild:null,since:0,disc:!opt.hidden,seed:Math.random()*1000};
+    G.islands.push(is);});
+  // מיקומי פתיחה
+  const starts=[];const off=rnd(0,Math.PI*2);
+  for(let i=0;i<opt.players;i++){const a=off+i*Math.PI*2/opt.players;let p={x:W/2+Math.cos(a)*(W/2-80),y:H/2+Math.sin(a)*(H/2-80)};
+    for(let k=0;k<40&&G.islands.some(is=>dist(is,p)<is.r+50);k++){p.x+=rnd(-60,60);p.y+=rnd(-60,60);p.x=clamp(p.x,40,W-40);p.y=clamp(p.y,40,H-40);}starts.push(p);}
+  if(opt.pirates){const irons=G.islands.filter(i=>!i.center&&i.res==='iron');
+    irons.sort((a,b)=>Math.min(...starts.map(s=>dist(s,b)))-Math.min(...starts.map(s=>dist(s,a))));
+    const pi=irons[Math.floor(Math.random()*Math.min(2,irons.length))]||irons[0];if(pi){pi.pirate=true;G.pir.island=pi;}else G.pir.dead=true;}
+  G.players.forEach((P,i)=>{const s=spawnShip('pinasse',i,starts[i].x,starts[i].y);s.a=Math.atan2(H/2-s.y,W/2-s.x);});
+  for(let i=0;i<3;i++){let p,k=0;do{p={x:rnd(80,W-80),y:rnd(80,H-80)};k++;}while(k<200&&(G.islands.some(is=>dist(is,p)<is.r+70)||starts.some(s=>dist(s,p)<250)));
+    G.wrecks.push({id:G.nid++,x:p.x,y:p.y,a:rnd(0,6.28),loot:{gold:rint(150,500),[pick(['wood','stone'])]:rint(50,150)},disc:!opt.hidden});}
+  for(let i=0;i<Math.floor(W*H/9000);i++)G.waves.push({x:rnd(0,W),y:rnd(0,H),p:rnd(0,6.28),s:rnd(.6,1.4)});
+  G.islands.forEach(makeIslandImg);
+  const hs=G.ships[0];cam.x=hs.x;cam.y=hs.y;cam.z=1;clampCam();updVision();
+  log(L(`המשחק התחיל: ${N} איים, ${opt.players} שחקנים. היעד: ${winTarget()} איים עם מבצר.`,`Game started: ${N} islands, ${opt.players} players. Goal: ${winTarget()} islands with a fortress.`));
+}
+function spawnShip(type,owner,x,y){const s={id:G.nid++,type,owner,x,y,vx:0,vy:0,a:rnd(0,6.28),order:null,dest:null,cargo:null,sink:0,wait:0};G.ships.push(s);return s;}
+const shipsOf=p=>G.ships.filter(s=>s.owner===p&&!s.sink);
+function log(t){G.log.push({d:G.day,t});if(G.log.length>120)G.log.shift();}
+function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,2600);}
+function fx(x,y,text,color){G.fx.push({x,y,text,color:color||'#fff',t:0});}
+
+/* ================= פקודות ספינות ================= */
+function destPoint(s,t){if(t.r){const d=dist(s,t)||1,k=(t.r+16)/d;return{x:t.x+(s.x-t.x)*k,y:t.y+(s.y-t.y)*k};}return{x:t.x,y:t.y};}
+function order(s,kind,target,extra){s.order=Object.assign({kind,target},extra||{});s.dest=destPoint(s,target);s.wait=0;}
+function sendCollect(s,src){order(s,'collect',src,{src,phase:'src'});}
+function nearestOwn(s,p){let best=null,bd=1e9;for(const is of ownedBy(p)){const d=dist(s,is);if(d<bd){bd=d;best=is;}}return best;}
+function unload(s,is){if(!s.cargo||s.cargo.amt<=0){s.cargo=null;return;}const P=G.players[s.owner];P.res[s.cargo.res]+=s.cargo.amt;
+  if(P.human)fx(is.x,is.y-is.r,`+${s.cargo.amt} ${RHE[s.cargo.res]}`,'#ffe27a');s.cargo=null;}
+function arrive(s){
+  const o=s.order;if(!o)return;const t=o.target,P=s.owner>=0?G.players[s.owner]:null;
+  switch(o.kind){
+  case 'move': if(t.r&&t.owner===s.owner)unload(s,t);s.order=null;break;
+  case 'settle': s.order=null;if(t.owner===s.owner)unload(s,t);trySettle(s,t);break;
+  case 'collect':
+    if(o.phase==='src'){
+      if(t.owner>=0||t.pirate){s.order=null;if(P.human)toast(L('האי כבר לא פנוי לאיסוף','The island is no longer free to collect from'));break;}
+      o.phase='wait';s.wait=DAY*2;break;}
+    if(o.phase==='home'){unload(s,t);if(o.src.owner<0&&!o.src.pirate){o.phase='src';o.target=o.src;s.dest=destPoint(s,o.src);}else s.order=null;}
+    break;
+  case 'wreck':{s.order=null;const w=t;if(!G.wrecks.includes(w))break;G.wrecks.splice(G.wrecks.indexOf(w),1);
+    for(const k in w.loot)P.res[k]+=w.loot[k];
+    if(P.human){sfx('coins');modal(L('ספינה טרופה','Ship wreck'),`<p>${L('מצאנו משאבים שימושיים:','We found these useful resources:')}</p><div class="row" style="justify-content:center">${costHtml(w.loot)}</div>`);}break;}
+  case 'bribe':{s.order=null;if(!(t.owner>=0&&t.owner!==s.owner)){if(P.human)toast(L('האי כבר לא שייך ליריב','The island no longer belongs to an enemy'));break;}
+    const v=islandValue(t);if(P.res.gold<v){if(P.human)toast(L(`אין מספיק כסף. נדרש ${fmt(v)}`,`Not enough gold. ${fmt(v)} needed`));break;}
+    P.res.gold-=v;s.dead=true;transfer(t,s.owner,'diplomat');break;}
+  case 'attack':{s.order=null;if(t.pirate)killPirates(s.owner);break;}
+  case 'raid': pirRaid(s,t);break;
+  case 'pirhome': s.dead=true;G.pir.ship=null;G.pir.cd=40;break;
+  }
+}
+function trySettle(s,is){const P=G.players[s.owner];
+  if(!canSettle(is)){if(P.human)toast(L('אי אפשר ליישב את האי הזה','This island cannot be settled'));return;}
+  if(!afford(P,SETTLE)){if(P.human)toast(L('אין מספיק משאבים ליישוב: 200 כסף, 200 עץ, 200 אבן','Not enough resources to settle: 200 gold, 200 wood, 200 stone'));return;}
+  pay(P,SETTLE);is.build={kind:'settle',p:s.owner,t:0,total:SETTLE_TIME};s.dead=true;if(G.sel===s){G.sel=null;updSel();}if(P.human)sfx('build');}
+const canSettle=is=>!is.center&&!is.pirate&&is.owner<0&&!is.build;
+function islandValue(is){let v=1500+10*Math.max(0,G.day-is.since);for(const k of BKEYS)if(is.b[k])v+=(BLD[k].cost.gold||0)/2;return Math.round(v);}
+function transfer(is,to,how){const from=is.owner;is.owner=to;is.since=G.day;if(is.build&&is.build.kind==='bld')is.build=null;is.sbuild=null;
+  const T=G.players[to],F=G.players[from];log(L(`${T.name} קנה את ${is.name} מ${F.name}`,`${T.name} bought ${is.name} from ${F.name}`));
+  if(T.human){sfx('island');modal(L('אי חדש!','New island!'),L(`<p>הדיפלומט שלך קנה את <b>${is.name}</b> מ${F.name}.</p>`,`<p>Your diplomat bought <b>${is.name}</b> from ${F.name}.</p>`));}
+  else if(F.human){sfx('lose');modal(L('איבדת אי','Island lost'),L(`<p>${T.name} קנה ממך את <b>${is.name}</b> בעזרת דיפלומט.</p>`,`<p>${T.name} bought <b>${is.name}</b> from you with a diplomat.</p>`));}
+  firstIsland(to);checkElim(from);}
+function checkElim(p){const P=G.players[p];if(!P.alive||!P.had)return;if(ownedBy(p).length)return;
+  P.alive=false;G.ships.forEach(s=>{if(s.owner===p&&!s.sink)s.sink=.01;});log(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));
+  if(P.human)gameOver(false);else{toast(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));if(G.players.every(q=>q.human||!q.alive))gameOver(true);}}
+function firstIsland(p){const P=G.players[p];if(P.had)return;P.had=true;G.order.push(p);
+  if(G.pir.island&&!G.pir.started&&!G.pir.dead){G.pir.started=true;pirLaunch();}}
+
+/* ================= שודדים ================= */
+function pirTarget(){const ord=G.order.filter(i=>G.players[i].alive&&ownedBy(i).length);if(!ord.length)return -1;const k=G.pir.k;
+  if(G.players.length===2){if(ord.length===1)return ord[0];return ord[k<2?0:((k-2)%2===0?1:0)];}return ord[k%ord.length];}
+function pirLaunch(excl){const pr=G.pir;if(pr.dead)return;const p=pirTarget();if(p<0){pr.cd=10;return;}
+  let isl=ownedBy(p);if(excl&&isl.length>1)isl=isl.filter(i=>i!==excl);const t=pick(isl);
+  const a=Math.atan2(t.y-pr.island.y,t.x-pr.island.x);const s=spawnShip('pirate',-1,pr.island.x+Math.cos(a)*(pr.island.r+20),pr.island.y+Math.sin(a)*(pr.island.r+20));
+  s.a=a;pr.ship=s;pr.target=p;order(s,'raid',t);}
+function pirRaid(s,t){const pr=G.pir;let p=pr.target;
+  if(t.owner<0){order(s,'pirhome',pr.island);return;}
+  if(t.owner!==p)p=pr.target=t.owner;
+  const P=G.players[p];
+  if(t.b.fortress){s.sink=.01;pr.ship=null;pr.fails[p]=(pr.fails[p]||0)+1;
+    if(P.human){sfx('sink');toast(L(`ספינת השודדים טבעה מול המבצר ב${t.name}!`,`The pirate ship sank at the fortress of ${t.name}!`));}log(L(`ספינת שודדים טבעה מול ${t.name}`,`A pirate ship sank at ${t.name}`));
+    if(pr.fails[p]>=2){pr.fails[p]=0;pr.k++;pirLaunch();}else pirLaunch(t);return;}
+  const stolen={};for(const r of RES){const a=Math.floor(P.res[r]*rnd(.6,.8));P.res[r]-=a;if(a)stolen[r]=a;}
+  const built=BKEYS.filter(k=>t.b[k]);let des=null;if(built.length){des=pick(built);t.b[des]=0;}
+  P.raided++;pr.fails[p]=0;pr.k++;
+  log(L(`שודדים פשטו על ${t.name} (${P.name})`,`Pirates raided ${t.name} (${P.name})`));
+  if(P.human){sfx('pirate');modal(L('פלישת שודדים','Pirate invasion'),`<p>${L(`השודדים פשטו על <b>${t.name}</b>${des?` והרסו את ה<b>${BLD[des].he}</b>`:''}.`,`Pirates raided <b>${t.name}</b>${des?` and destroyed the <b>${BLD[des].he}</b>`:''}.`)}</p><p>${L('הם גנבו ממך:','They stole from you:')}</p><div class="row" style="justify-content:center">${costHtml(stolen)||L('כלום','nothing')}</div>`,[[L('👁 הצג','👁 Show'),()=>{cam.x=t.x;cam.y=t.y;clampCam();}],[L('סגור','Close')]]);}
+  order(s,'pirhome',pr.island);}
+function killPirates(by){const pr=G.pir;if(pr.dead)return;pr.dead=true;if(pr.ship){pr.ship.sink=.01;pr.ship=null;}
+  pr.island.pirate=false;pr.island.since=G.day;makeIslandImg(pr.island);const P=G.players[by];log(L(`${P.name} השמיד את השודדים`,`${P.name} destroyed the pirates`));
+  if(P.human){sfx('win');modal(L('ניצחון על השודדים!','Pirates defeated!'),L(`<p>ספינת המלחמה שלך השמידה את מושבת השודדים.</p><p>${pr.island.name} הוא עכשיו אי ברזל פנוי שאפשר ליישב.</p>`,`<p>Your warrior destroyed the pirate settlement.</p><p>${pr.island.name} is now a free iron island you can settle.</p>`));}
+  else if(G.players[0].alive)toast(L(`${P.name} השמיד את השודדים`,`${P.name} destroyed the pirates`));}
+
+/* ================= בנייה ================= */
+function startBuild(P,is,key){if(is.owner!==P.id||is.build||is.b[key])return false;const B=BLD[key];if(!afford(P,B.cost))return false;
+  pay(P,B.cost);is.build={kind:'bld',key,t:0,total:B.time,p:P.id};if(P.human)sfx('build');return true;}
+function startShip(P,is,key){const S=SHIPS[key];if(is.owner!==P.id||!is.b.shipyard||is.sbuild)return false;if(S.fort&&!is.b.fortress)return false;
+  if(!afford(P,S.cost))return false;pay(P,S.cost);is.sbuild={key,t:0,total:S.time};return true;}
+function updIsland(is,dt){
+  if(is.build){is.build.t+=dt;if(is.build.t>=is.build.total){const b=is.build;is.build=null;const P=G.players[b.p];
+    if(b.kind==='settle'){is.owner=b.p;is.since=G.day;P.res[is.res]+=is.storage;is.storage=0;log(L(`${P.name} יישב את ${is.name}`,`${P.name} settled ${is.name}`));
+      if(P.human){sfx('island');fx(is.x,is.y-is.r,L('אי חדש!','New island!'),'#fff');}firstIsland(b.p);}
+    else if(is.owner===b.p){is.b[b.key]=1;if(P.human){fx(is.x,is.y-is.r,BLD[b.key].he+L(' מוכן',' ready'),'#fff');if(b.key==='fortress')sfx('island');}}}}
+  if(is.sbuild&&is.owner>=0){is.sbuild.t+=dt;if(is.sbuild.t>=is.sbuild.total){const k=is.sbuild.key;is.sbuild=null;const a=rnd(0,6.28);
+    const s=spawnShip(k,is.owner,is.x+Math.cos(a)*(is.r+20),is.y+Math.sin(a)*(is.r+20));s.a=a;
+    if(G.players[is.owner].human){sfx('launch');fx(is.x,is.y-is.r,SHIPS[k].he+L(' הושקה',' launched'),'#fff');}}}
+}
+function dayTick(){
+  G.day++;const gd=G.players.map(()=>0);
+  for(const is of G.islands){let p=is.prod*(is.b.miner&&is.owner>=0?2:1);
+    if(is.owner>=0){const P=G.players[is.owner];if(P.broke)p=Math.round(p*2/3);P.res[is.res]+=p;
+      let g=-EMPTY_UPKEEP;for(const k of BKEYS)if(is.b[k])g+=BLD[k].daily;gd[is.owner]+=g;
+      if(is.b.foundry){const c=Math.min(8,P.res.iron);const st=Math.floor(c/2);P.res.iron-=st*2;P.res.steel+=st;}}
+    else if(!is.pirate)is.storage=Math.min(is.storage+p,999);}
+  G.players.forEach((P,i)=>{if(!P.alive)return;P.res.gold+=gd[i];if(P.res.gold<=0){P.res.gold=0;if(!P.broke&&P.human&&P.had)toast(L('נגמר הכסף! הספינות והייצור איטיים בשליש','Out of gold! Ships and production are a third slower'));P.broke=P.had&&true;}else P.broke=false;});
+  const tg=winTarget();for(const P of G.players){if(!P.alive)continue;const f=ownedBy(P.id).filter(i=>i.b.fortress).length;if(f>=tg){gameOver(P.human,P);return;}}
+}
+function islandDaily(is){const P=G.players[is.owner];let p=is.prod*(is.b.miner?2:1);if(P&&P.broke)p=Math.round(p*2/3);let g=-EMPTY_UPKEEP;for(const k of BKEYS)if(is.b[k])g+=BLD[k].daily;return{p,g};}
+function gameOver(win,P){if(G.over)return;G.over=true;sfx(win?'win':'lose');
+  modal(win?L('ניצחת! 🏆','You won! 🏆'):L('המשחק נגמר','Game over'),win?L(`<p>כל הכבוד! הגעת ליעד ביום ${G.day}.</p>`,`<p>Well done! You reached the goal on day ${G.day}.</p>`):`<p>${P&&!P.human?P.name+L(' הגיע ראשון ליעד.',' reached the goal first.'):L('הפסדת את כל האיים שלך.','You lost all your islands.')}</p>`,
+    [[L('משחק חדש','New game'),()=>{endGame();show('setup');}],[L('תפריט ראשי','Main menu'),()=>{endGame();show('mainMenu');}]]);}
+
+/* ================= תנועה ================= */
+function updShip(s,dt){
+  if(s.sink){s.sink+=dt;return;}
+  const o=s.order;
+  if(o&&o.kind==='collect'&&o.phase==='wait'){const src=o.src;s.wait-=dt;const cap=SHIPS[s.type].cargo;
+    if(src.owner>=0||src.pirate){s.order=null;}
+    else if(src.storage>=cap||s.wait<=0){const a=Math.min(cap,Math.floor(src.storage));src.storage-=a;s.cargo=a>0?{res:src.res,amt:a}:null;
+      const home=nearestOwn(s,s.owner);if(home){o.phase='home';o.target=home;s.dest=destPoint(s,home);}else{s.order=null;}}}
+  if(!s.dest){s.vx*=.9;s.vy*=.9;s.x+=s.vx*dt;s.y+=s.vy*dt;keepIn(s);return;}
+  const t=o&&o.target;let dx=s.dest.x-s.x,dy=s.dest.y-s.y;const d=Math.hypot(dx,dy);
+  const near=t&&t.r?dist(s,t)<t.r+28:(t&&t.loot?d<22:d<8);
+  if(near){s.dest=null;arrive(s);return;}
+  let sp=SHIPS[s.type].speed*KN;if(s.owner>=0&&G.players[s.owner].broke)sp*=2/3;
+  sp*=clamp(d/110,.35,1); // האטה בהתקרבות לעצירה
+  let tx=dx/d*sp,ty=dy/d*sp;
+  for(const is of G.islands){if(is===t)continue;const ex=is.x-s.x,ey=is.y-s.y,dd=Math.hypot(ex,ey),R=is.r+45;
+    if(dd<R&&dd>.01&&(ex*tx+ey*ty)>0){let px=-ey/dd,py=ex/dd;if(px*dx+py*dy<0){px=-px;py=-py;}const w=1-(dd-is.r)/(R-is.r);tx+=px*sp*w*1.6;ty+=py*sp*w*1.6;}}
+  const tl=Math.hypot(tx,ty)||1;tx=tx/tl*sp;ty=ty/tl*sp;
+  const k=Math.min(1,dt*2.2);s.vx+=(tx-s.vx)*k;s.vy+=(ty-s.vy)*k;s.x+=s.vx*dt;s.y+=s.vy*dt;
+  if(Math.hypot(s.vx,s.vy)>2)s.a=Math.atan2(s.vy,s.vx);
+  for(const is of G.islands){if(is===t)continue;const ex=s.x-is.x,ey=s.y-is.y,dd=Math.hypot(ex,ey),R=is.r+10;if(dd<R&&dd>.01){s.x=is.x+ex/dd*R;s.y=is.y+ey/dd*R;}}
+  keepIn(s);
+}
+function keepIn(s){s.x=clamp(s.x,10,G.W-10);s.y=clamp(s.y,10,G.H-10);}
+function shipMass(s){const S=SHIPS[s.type];const cf=s.cargo&&S.cargo?s.cargo.amt/S.cargo:0;const v=Math.hypot(s.vx,s.vy)/(30*KN);return S.mass*(1+cf*.6)*(.6+v);}
+function collide(){const L=G.ships;for(let i=0;i<L.length;i++){const a=L[i];if(a.sink)continue;for(let j=i+1;j<L.length;j++){const b=L[j];if(b.sink)continue;
+  const r=(SHIPS[a.type].len+SHIPS[b.type].len)*.33;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>=r||d<.01)continue;
+  const ov=r-d,nx=dx/d,ny=dy/d,ma=shipMass(a),mb=shipMass(b),sum=ma+mb;
+  a.x-=nx*ov*mb/sum;a.y-=ny*ov*mb/sum;b.x+=nx*ov*ma/sum;b.y+=ny*ov*ma/sum;
+  const fa=1-.25*mb/sum,fb=1-.25*ma/sum;a.vx*=fa;a.vy*=fa;b.vx*=fb;b.vy*=fb;}}}
+
+/* ================= מחשב ================= */
+function aiThink(P){
+  const me=P.id,mine=ownedBy(me),ships=shipsOf(me),R=P.res,diff=G.opt.diff;
+  const cnt=k=>ships.filter(s=>s.type===k).length+mine.filter(i=>i.sbuild&&i.sbuild.key===k).length;
+  const reserve=mine.length<winTarget()?SETTLE:{};
+  // מכירת עודפים
+  if(mine.some(i=>i.b.market)){for(const r of ['wood','stone','iron']){let ex=0;if(R.gold<400)ex=Math.floor((R[r]-250)*.5);else if(R[r]>1200)ex=R[r]-900;if(ex>0){R[r]-=ex;R.gold+=ex*SELL[r];}}
+    if(R.gold>2200&&R.stone<500&&mine.some(i=>!i.b.fortress)){const n=Math.min(500-R.stone,Math.floor((R.gold-1700)/BUY.stone));if(n>0){R.stone+=n;R.gold-=n*BUY.stone;}}
+    if(R.gold>3000&&R.steel<100){const n=Math.min(100-R.steel,Math.floor((R.gold-2400)/BUY.steel));if(n>0){R.steel+=n;R.gold-=n*BUY.steel;}}}
+  // יישוב
+  const settling=G.islands.some(i=>i.build&&i.build.kind==='settle'&&i.build.p===me)||ships.some(s=>s.order&&s.order.kind==='settle');
+  if(!settling&&afford(P,SETTLE)){const pin=ships.find(s=>s.type==='pinasse'&&(!s.order||s.order.kind==='collect'));
+    if(pin){const taken=new Set(G.ships.filter(s=>s.order&&s.order.kind==='settle').map(s=>s.order.target));
+      const have={wood:0,stone:0,iron:0};mine.forEach(i=>have[i.res]++);
+      const c=G.islands.filter(i=>canSettle(i)&&!taken.has(i));
+      if(c.length){c.sort((a,b)=>sc(a)-sc(b));order(pin,'settle',c[0]);}
+      function sc(i){return dist(pin,i)+have[i.res]*350-(i.res==='iron'&&!have.iron?400:0)-i.storage;}}}
+  // מבנים
+  if(R.gold>=1300&&R.stone>=500&&R.steel>=100&&R.wood>=200){const c=mine.filter(i=>!i.b.fortress&&!i.build).sort((a,b)=>b.b.shipyard-a.b.shipyard);if(c[0])startBuild(P,c[0],'fortress');}
+  const net=mine.reduce((a,i)=>a+islandDaily(i).g,0);
+  for(const is of mine){if(is.build)continue;let w=null;
+    if(!is.b.market&&mine.filter(i=>i.b.market).length<Math.max(1,Math.ceil(mine.length/2)))w='market';
+    else if(!is.b.shipyard&&(!mine.some(i=>i.b.shipyard)||(mine.length>=5&&mine.filter(i=>i.b.shipyard).length<2)))w='shipyard';
+    else if(!is.b.foundry&&(net>=0||R.gold>900)&&(is.res==='iron'||(R.iron>=30&&!mine.some(i=>i.b.foundry))))w='foundry';
+    else if(!is.b.miner&&(net>=10||R.gold>900))w='miner';
+    if(w&&afford(P,addC(BLD[w].cost,w==='market'?{}:reserve))){startBuild(P,is,w);break;}}
+  // ספינות
+  for(const is of mine.filter(i=>i.b.shipyard&&!i.sbuild)){let w=null;
+    if(is.b.fortress&&!G.pir.dead&&P.raided>=2&&cnt('warrior')<1)w='warrior';
+    else if(is.b.fortress&&cnt('diplomat')<(diff>=1?1:0)+(diff===2&&mine.length>4?1:0)&&R.gold>2600)w='diplomat';
+    else if(cnt('pinasse')<1+Math.floor(mine.length/4)&&R.steel>=50)w='pinasse';
+    else if(cnt('cog')<Math.min(2+mine.length,7))w='cog';
+    if(w&&afford(P,addC(SHIPS[w].cost,w==='warrior'?{}:reserve)))startShip(P,is,w);}
+  // איסוף
+  if(mine.length){const srcs=G.islands.filter(i=>i.owner<0&&!i.pirate);
+    for(const s of ships.filter(s=>!s.order&&(s.type==='cog'||(s.type==='pinasse'&&!afford(P,SETTLE))))){
+      if(s.cargo){const h=nearestOwn(s,me);if(h){order(s,'move',h);continue;}}
+      let best=null,bv=-1e9;for(const i of srcs){const n=G.ships.filter(q=>q.order&&q.order.src===i).length;const v=i.storage+i.prod*6-dist(s,i)*.15-n*160+(i.res==='iron'&&!mine.some(m=>m.res==='iron')?300:0);if(v>bv){bv=v;best=i;}}
+      if(best)sendCollect(s,best);}}
+  // דיפלומט ומלחמה
+  for(const s of ships.filter(s=>!s.order&&s.type==='diplomat')){const c=G.islands.filter(i=>i.owner>=0&&i.owner!==me&&islandValue(i)<=R.gold-(diff===2?150:400));
+    if(c.length){c.sort((a,b)=>islandValue(a)+dist(s,a)-islandValue(b)-dist(s,b));order(s,'bribe',c[0]);}}
+  for(const s of ships.filter(s=>!s.order&&s.type==='warrior'))if(!G.pir.dead)order(s,'attack',G.pir.island);
+}
+
+/* ================= עדכון ================= */
+function update(dt){
+  G.time+=dt;G.dayT+=dt;while(G.dayT>=DAY&&!G.over){G.dayT-=DAY;dayTick();}
+  for(const is of G.islands)updIsland(is,dt);
+  for(const s of G.ships)updShip(s,dt);
+  collide();
+  G.ships=G.ships.filter(s=>!s.dead&&s.sink<2.2);
+  if(G.sel&&!G.ships.includes(G.sel)){G.sel=null;updSel();}
+  const pr=G.pir;if(pr.started&&!pr.dead&&!pr.ship&&pr.cd>=0){pr.cd-=dt;if(pr.cd<=0){pr.cd=-1;pirLaunch();}}
+  const iv=[4,2,1][G.opt.diff];for(const P of G.players){if(P.human||!P.alive)continue;P.aiT-=dt;if(P.aiT<=0){P.aiT=iv;aiThink(P);}}
+  G.visT-=dt;if(G.visT<=0){G.visT=.5;updVision();}
+}
+function updVision(){if(!G.opt.hidden)return;const src=[...shipsOf(0),...ownedBy(0)];
+  for(const is of G.islands)if(!is.disc&&src.some(s=>dist(s,is)<420))is.disc=true;
+  for(const w of G.wrecks)if(!w.disc&&src.some(s=>dist(s,w)<380))w.disc=true;}
+function visibleShip(s){if(!G.opt.hidden||s.owner===0)return true;return shipsOf(0).some(q=>dist(q,s)<420)||ownedBy(0).some(i=>dist(i,s)<450);}
+
+/* ================= ציור ================= */
+function blob(c,cx,cy,r,seed,amp){c.beginPath();const n=40;for(let k=0;k<=n;k++){const a=k/n*Math.PI*2;
+  const rr=r*(1+amp*(.55*Math.sin(3*a+seed)+.3*Math.sin(5*a+seed*1.7)+.15*Math.sin(8*a+seed*2.3)));const x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;k?c.lineTo(x,y):c.moveTo(x,y);}c.closePath();}
+function makeIslandImg(is){
+  const S=2,ext=is.r*1.7,sz=Math.ceil(ext*2*S);const cvs=document.createElement('canvas');cvs.width=cvs.height=sz;const c=cvs.getContext('2d');
+  c.scale(S,S);const C=ext,r=is.r,sd=is.seed;let rs=sd;const R=()=>{rs=(rs*9301+49297)%233280;return rs/233280;};
+  const sh=c.createRadialGradient(C,C,r*.6,C,C,r*1.55);sh.addColorStop(0,'rgba(170,230,240,.75)');sh.addColorStop(1,'rgba(170,230,240,0)');c.fillStyle=sh;blob(c,C,C,r*1.45,sd,.12);c.fill();
+  c.strokeStyle='rgba(255,255,255,.75)';c.lineWidth=2.5;blob(c,C,C,r*1.08,sd,.12);c.stroke();
+  if(is.center){
+    c.fillStyle='#2b2b2f';blob(c,C,C,r,sd,.12);c.fill();c.fillStyle='#4a4a50';blob(c,C-3,C-3,r*.75,sd+1,.18);c.fill();
+    c.fillStyle='#6a6a72';for(let i=0;i<9;i++){const a=R()*6.28,d=R()*r*.7;c.beginPath();c.arc(C+Math.cos(a)*d,C+Math.sin(a)*d,2+R()*4,0,7);c.fill();}
+    const col={wood:['#2e7d32','#43a047'],stone:['#f1f1f1','#cfcfcf'],iron:['#c62828','#8e2b2b']}[is.res];
+    c.fillStyle=col[1];blob(c,C+r*.12,C+r*.08,r*.42,sd+3,.25);c.fill();
+    for(let i=0;i<10;i++){const a=R()*6.28,d=R()*r*.4;c.fillStyle=col[i%2];c.beginPath();c.arc(C+r*.12+Math.cos(a)*d,C+r*.08+Math.sin(a)*d,3+R()*4,0,7);c.fill();}
+  }else{
+    c.fillStyle='#e9d9a6';blob(c,C,C,r,sd,.12);c.fill();
+    c.fillStyle='#7aa646';blob(c,C,C,r*.8,sd+.5,.14);c.fill();c.fillStyle='#5f8f35';blob(c,C+2,C+2,r*.55,sd+1.2,.2);c.fill();
+    const n=is.res==='wood'?14:8;
+    for(let i=0;i<n;i++){const a=R()*6.28,d=r*(.25+R()*.45),x=C+Math.cos(a)*d,y=C+Math.sin(a)*d;
+      if(is.res==='wood'){c.fillStyle='#1f5e22';c.beginPath();c.arc(x+1.5,y+1.5,4.5,0,7);c.fill();c.fillStyle='#2f7d32';c.beginPath();c.arc(x,y,4.5,0,7);c.fill();}
+      else{c.fillStyle=is.res==='stone'?'#9da3aa':'#7b3b3b';c.beginPath();c.moveTo(x-5,y+3);c.lineTo(x-2,y-4);c.lineTo(x+4,y-2);c.lineTo(x+5,y+3);c.closePath();c.fill();
+        c.fillStyle=is.res==='stone'?'#e4e7ea':'#b35a4a';c.beginPath();c.moveTo(x-2,y-4);c.lineTo(x+4,y-2);c.lineTo(x+1,y+1);c.closePath();c.fill();}}
+    if(is.pirate){c.fillStyle='#3a2a1a';c.fillRect(C-8,C-4,16,10);c.fillStyle='#222';c.beginPath();c.moveTo(C-10,C-4);c.lineTo(C,C-11);c.lineTo(C+10,C-4);c.fill();}
+  }
+  is.img=cvs;is.ext=ext;
+}
+function drawIcon(kind,x,y,s){const c=ctx;c.save();c.translate(x,y);c.scale(s,s);
+  if(kind==='house'){c.fillStyle='#f3ead2';c.fillRect(-5,-2,10,7);c.fillStyle='#b5442c';c.beginPath();c.moveTo(-6.5,-2);c.lineTo(0,-8);c.lineTo(6.5,-2);c.fill();c.fillStyle='#f3ead2';c.fillRect(4,0,7,5);c.fillStyle='#a33a24';c.beginPath();c.moveTo(3,0);c.lineTo(7.5,-4);c.lineTo(12,0);c.fill();}
+  else if(kind==='market'){c.fillStyle='#fff';c.beginPath();c.arc(0,0,7,Math.PI,0);c.fill();c.fillStyle='#d32f2f';for(let i=-6;i<6;i+=4){c.fillRect(i,-6,2,6);}c.fillStyle='#8d6e63';c.fillRect(-7,0,14,4);}
+  else if(kind==='miner'){c.fillStyle='#5d4037';c.beginPath();c.arc(0,2,7,Math.PI,0);c.fill();c.fillStyle='#1b1b1b';c.beginPath();c.arc(0,2,3.5,Math.PI,0);c.fill();c.strokeStyle='#9e9e9e';c.lineWidth=1.6;c.beginPath();c.moveTo(-6,-7);c.lineTo(4,-1);c.stroke();}
+  else if(kind==='foundry'){c.fillStyle='#8d8d8d';c.fillRect(-7,-3,12,8);c.fillStyle='#555';c.fillRect(2,-11,4,9);c.fillStyle='rgba(120,120,120,.6)';c.beginPath();c.arc(5,-14,3,0,7);c.arc(7,-18,3.5,0,7);c.fill();c.fillStyle='#ff7043';c.fillRect(-5,0,4,3);}
+  else if(kind==='shipyard'){c.fillStyle='#8b5a2b';c.fillRect(-9,-2,18,4);for(let i=-8;i<=8;i+=4)c.fillRect(i,2,1.6,4);c.fillStyle='#eee';c.beginPath();c.moveTo(0,-2);c.lineTo(0,-11);c.lineTo(6,-3);c.fill();}
+  else if(kind==='fortress'){c.fillStyle='#9e9e9e';c.fillRect(-10,-6,20,13);c.fillStyle='#757575';for(let i=-10;i<10;i+=5)c.fillRect(i,-9,3,3);c.fillStyle='#c62828';c.fillRect(-4,-14,8,8);c.beginPath();c.moveTo(-6,-14);c.lineTo(0,-20);c.lineTo(6,-14);c.fill();c.fillStyle='#424242';c.fillRect(-2,1,4,6);}
+  c.restore();}
+function drawFlag(x,y,col,pir,s){const c=ctx;c.save();c.translate(x,y);c.scale(s,s);c.strokeStyle='#5d4037';c.lineWidth=1.5;c.beginPath();c.moveTo(0,0);c.lineTo(0,-22);c.stroke();
+  c.fillStyle=pir?'#111':col;c.beginPath();c.moveTo(0,-22);c.lineTo(15,-18);c.lineTo(0,-13);c.fill();c.strokeStyle='rgba(0,0,0,.4)';c.lineWidth=.8;c.stroke();
+  if(pir){c.fillStyle='#fff';c.beginPath();c.arc(5,-18,2,0,7);c.fill();}c.restore();}
+const SLOTS={market:[-.45,.35],miner:[.35,.4],foundry:[.4,-.3],shipyard:[-.15,.9],fortress:[-.35,-.35]};
+function drawIsland(is){
+  ctx.drawImage(is.img,is.x-is.ext,is.y-is.ext,is.ext*2,is.ext*2);
+  const r=is.r;
+  if(is.owner>=0||is.pirate){ctx.save();ctx.strokeStyle=is.pirate?'#111':G.players[is.owner].color;ctx.lineWidth=3.2;ctx.lineCap='round';ctx.setLineDash([.1,9]);
+    ctx.beginPath();ctx.arc(is.x,is.y,r+22,0,7);ctx.stroke();ctx.restore();}
+  if(is.owner>=0){drawIcon('house',is.x+2,is.y+2,1);for(const k of BKEYS)if(is.b[k])drawIcon(k,is.x+SLOTS[k][0]*r,is.y+SLOTS[k][1]*r,k==='fortress'?1.1:1);
+    drawFlag(is.x+r*.25,is.y-r*.55,G.players[is.owner].color,false,1);}
+  if(is.pirate)drawFlag(is.x+r*.2,is.y-r*.5,'#000',true,1.1);
+  const b=is.build||is.sbuild;
+  if(b){const pct=Math.floor(b.t/b.total*100);ctx.save();ctx.font=`bold ${Math.max(12,13/cam.z)}px Arial`;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3/cam.z+1;
+    const y=is.y-r-28;ctx.strokeText(pct+'%',is.x,y);ctx.fillText(pct+'%',is.x,y);
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(is.x,y-20,6,G.time*3,G.time*3+5);ctx.stroke();ctx.restore();}
+  if(cam.z>.55){ctx.save();ctx.font=`bold ${12/cam.z}px Arial`;ctx.textAlign='center';ctx.direction=LANG==='en'?'ltr':'rtl';ctx.fillStyle='rgba(255,255,255,.95)';ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=2.5/cam.z;
+    ctx.strokeText(is.name,is.x,is.y+r+38);ctx.fillText(is.name,is.x,is.y+r+38);ctx.restore();}
+}
+function drawShip(s){
+  const S=SHIPS[s.type],L=S.len,W=L*.36,c=ctx;c.save();c.translate(s.x,s.y);
+  if(s.sink){c.globalAlpha=Math.max(0,1-s.sink/2.2);c.rotate(s.sink*.6);}
+  if(G.sel===s){c.strokeStyle='#ffeb3b';c.lineWidth=2.5;c.setLineDash([5,4]);c.beginPath();c.arc(0,0,L*.75,0,7);c.stroke();c.setLineDash([]);}
+  c.rotate(s.a);
+  const v=Math.hypot(s.vx,s.vy);if(v>3&&!s.sink){c.strokeStyle='rgba(255,255,255,.45)';c.lineWidth=1.5;c.beginPath();c.moveTo(-L*.5,-W*.4);c.lineTo(-L*1.3,-W*1.1);c.moveTo(-L*.5,W*.4);c.lineTo(-L*1.3,W*1.1);c.stroke();}
+  c.fillStyle='rgba(0,0,0,.25)';c.beginPath();c.ellipse(1.5,2,L*.52,W*.55,0,0,7);c.fill();
+  c.fillStyle=s.type==='pirate'?'#2b1d12':s.type==='warrior'?'#5d3a1a':'#8b5a2b';
+  c.beginPath();c.moveTo(L/2,0);c.quadraticCurveTo(L*.2,-W/2,-L/2,-W*.4);c.lineTo(-L/2,W*.4);c.quadraticCurveTo(L*.2,W/2,L/2,0);c.fill();
+  c.strokeStyle='#3e2412';c.lineWidth=1;c.stroke();
+  c.fillStyle=s.type==='pirate'?'#4a3423':'#c49a6c';c.beginPath();c.ellipse(-L*.02,0,L*.36,W*.28,0,0,7);c.fill();
+  if(s.cargo&&s.cargo.amt>0){c.fillStyle='#d7b56d';c.fillRect(-L*.15,-W*.18,L*.2,W*.36);c.strokeStyle='#7a5a22';c.strokeRect(-L*.15,-W*.18,L*.2,W*.36);}
+  const ms=S.masts,sail=s.type==='pirate'?'#1c1c1c':'#f5f1e6';
+  for(let i=0;i<ms;i++){const x=ms===1?0:L*(.22-.44*i/(ms-1));c.fillStyle=sail;c.fillRect(x-1.8,-W*.75,3.6,W*1.5);c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=.6;c.strokeRect(x-1.8,-W*.75,3.6,W*1.5);
+    if(s.type==='diplomat'){c.fillStyle='#1565c0';c.fillRect(x-1.8,-W*.2,3.6,W*.4);}}
+  c.fillStyle=s.owner>=0?G.players[s.owner].color:'#000';c.fillRect(-L*.48,-3,5,6);c.strokeStyle='rgba(0,0,0,.5)';c.strokeRect(-L*.48,-3,5,6);
+  c.restore();
+}
+function drawWreck(w){const c=ctx;c.save();c.translate(w.x,w.y+Math.sin(performance.now()/700+w.id)*1.5);c.rotate(w.a);
+  c.fillStyle='rgba(255,255,255,.35)';c.beginPath();c.ellipse(0,0,20,10,0,0,7);c.fill();
+  c.fillStyle='#6d4c33';c.beginPath();c.moveTo(12,0);c.lineTo(-10,-6);c.lineTo(-6,0);c.lineTo(-11,6);c.closePath();c.fill();
+  c.strokeStyle='#4e342e';c.lineWidth=2;c.beginPath();c.moveTo(-2,0);c.lineTo(8,-9);c.stroke();c.fillStyle='#ddd';c.fillRect(5,-11,5,3);c.restore();}
+function draw(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#1b3a57';ctx.fillRect(0,0,SW,SH);
+  if(!G){drawMenuSea();return;}
+  ctx.save();ctx.translate(SW/2,SH/2);ctx.scale(cam.z,cam.z);ctx.translate(-cam.x,-cam.y);
+  const g=ctx.createLinearGradient(0,0,G.W,G.H);g.addColorStop(0,'#4483b8');g.addColorStop(1,'#2e679a');ctx.fillStyle=g;ctx.fillRect(0,0,G.W,G.H);
+  const tt=performance.now()/1000;ctx.strokeStyle='rgba(255,255,255,.13)';ctx.lineWidth=1.4;ctx.beginPath();
+  const vx0=cam.x-SW/2/cam.z,vx1=cam.x+SW/2/cam.z,vy0=cam.y-SH/2/cam.z,vy1=cam.y+SH/2/cam.z;
+  for(const w of G.waves){if(w.x<vx0-20||w.x>vx1+20||w.y<vy0-20||w.y>vy1+20)continue;const o=Math.sin(tt*w.s+w.p)*4;ctx.moveTo(w.x-8+o,w.y);ctx.quadraticCurveTo(w.x+o,w.y-3,w.x+8+o,w.y);}ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=2/cam.z;ctx.setLineDash([10/cam.z,8/cam.z]);ctx.strokeRect(0,0,G.W,G.H);ctx.setLineDash([]);
+  for(const w of G.wrecks)if(w.disc)drawWreck(w);
+  for(const is of G.islands){if(!is.disc)continue;if(is.x+is.ext<vx0||is.x-is.ext>vx1||is.y+is.ext<vy0||is.y-is.ext>vy1)continue;drawIsland(is);}
+  for(const s of G.ships)if(visibleShip(s))drawShip(s);
+  if(G.sel&&G.sel.dest){ctx.strokeStyle='rgba(255,235,59,.6)';ctx.lineWidth=1.5/cam.z;ctx.setLineDash([6/cam.z,6/cam.z]);ctx.beginPath();ctx.moveTo(G.sel.x,G.sel.y);ctx.lineTo(G.sel.dest.x,G.sel.dest.y);ctx.stroke();ctx.setLineDash([]);}
+  for(const f of G.fx){ctx.save();ctx.globalAlpha=Math.max(0,1-f.t/2.5);ctx.font=`bold ${14/cam.z}px Arial`;ctx.textAlign='center';ctx.direction=LANG==='en'?'ltr':'rtl';ctx.fillStyle=f.color;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3/cam.z;
+    const y=f.y-f.t*18;ctx.strokeText(f.text,f.x,y);ctx.fillText(f.text,f.x,y);ctx.restore();}
+  ctx.restore();
+}
+let menuT=0;function drawMenuSea(){const g=ctx.createLinearGradient(0,0,SW,SH);g.addColorStop(0,'#4483b8');g.addColorStop(1,'#24557f');ctx.fillStyle=g;ctx.fillRect(0,0,SW,SH);
+  ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1.5;const t=performance.now()/1000;ctx.beginPath();
+  for(let i=0;i<70;i++){const x=(i*137.5)%SW,y=(i*91.3)%SH,o=Math.sin(t+i)*5;ctx.moveTo(x-9+o,y);ctx.quadraticCurveTo(x+o,y-3,x+9+o,y);}ctx.stroke();}
+
+/* ================= מצלמה וקלט ================= */
+function minZoom(){return G?Math.min(SW/(G.W+160),SH/(G.H+160)):1;}
+function clampCam(){if(!G)return;cam.z=clamp(cam.z,minZoom(),2.6);const hw=SW/2/cam.z,hh=SH/2/cam.z;
+  const lx=hw-80,hx=G.W-hw+80,ly=hh-80,hy=G.H-hh+80;cam.x=lx>hx?G.W/2:clamp(cam.x,lx,hx);cam.y=ly>hy?G.H/2:clamp(cam.y,ly,hy);}
+const toWorld=(x,y)=>({x:(x-SW/2)/cam.z+cam.x,y:(y-SH/2)/cam.z+cam.y});
+const ptrs=new Map();let drag=false,pinch=null,downT=0;
+cv.addEventListener('pointerdown',e=>{audioInit();cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===1){drag=false;downT=performance.now();pinch=null;}
+  if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:cam.z};drag=true;}});
+cv.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p||!G)return;const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  if(ptrs.size===1){if(!drag&&Math.hypot(dx,dy)<9)return;drag=true;cam.x-=dx/cam.z;cam.y-=dy/cam.z;p.x=e.clientX;p.y=e.clientY;clampCam();}
+  else if(ptrs.size===2&&pinch){const [a0,b0]=[...ptrs.values()];const m0={x:(a0.x+b0.x)/2,y:(a0.y+b0.y)/2};p.x=e.clientX;p.y=e.clientY;
+    const [a,b]=[...ptrs.values()];const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};const w=toWorld(m0.x,m0.y);
+    cam.z=clamp(pinch.z*Math.hypot(a.x-b.x,a.y-b.y)/pinch.d,minZoom(),2.6);cam.x=w.x-(m.x-SW/2)/cam.z;cam.y=w.y-(m.y-SH/2)/cam.z;clampCam();}});
+function pUp(e){if(!ptrs.has(e.pointerId))return;const was=ptrs.size;ptrs.delete(e.pointerId);
+  if(was===1&&!drag&&G&&performance.now()-downT<600)tap(e.clientX,e.clientY);if(ptrs.size===0)pinch=null;}
+cv.addEventListener('pointerup',pUp);cv.addEventListener('pointercancel',e=>ptrs.delete(e.pointerId));
+cv.addEventListener('wheel',e=>{if(!G)return;e.preventDefault();const w=toWorld(e.clientX,e.clientY);cam.z=clamp(cam.z*(e.deltaY<0?1.12:.89),minZoom(),2.6);
+  cam.x=w.x-(e.clientX-SW/2)/cam.z;cam.y=w.y-(e.clientY-SH/2)/cam.z;clampCam();},{passive:false});
+function tap(sx,sy){const w=toWorld(sx,sy);
+  let bs=null,bd=1e9;for(const s of G.ships){if(s.sink||!visibleShip(s))continue;const d=dist(s,w),R=Math.max(SHIPS[s.type].len*.8,22/cam.z);if(d<R&&d<bd){bd=d;bs=s;}}
+  if(bs){if(bs.owner===0){G.sel=G.sel===bs?null:bs;sfx('tap');updSel();}else toast(bs.owner<0?L('ספינת שודדים ☠️','Pirate ship ☠️'):L(`${SHIPS[bs.type].he} של ${G.players[bs.owner].name}`,`${G.players[bs.owner].name}'s ${SHIPS[bs.type].he}`));return;}
+  for(const wr of G.wrecks)if(wr.disc&&dist(wr,w)<Math.max(26,24/cam.z)){openPanel({type:'wreck',w:wr});return;}
+  for(const is of G.islands)if(is.disc&&dist(is,w)<is.r+16){openPanel({type:'island',is,tab:'bld'});return;}
+  if(G.sel){order(G.sel,'move',{x:w.x,y:w.y});fx(w.x,w.y,'⚓','#ffeb3b');}
+}
+
+/* ================= ממשק ================= */
+const ORDER_HE={get move(){return L('מפליגה','sailing')},get settle(){return L('בדרך ליישוב','going to settle')},get collect(){return L('באיסוף סחורה','collecting goods')},get bribe(){return L('בדרך לקנות אי','going to buy an island')},get attack(){return L('בדרך לקרב','going to battle')},get wreck(){return L('בדרך לספינה הטרופה','going to the wreck')}};
+function updSel(){const b=$('selbar');const s=G&&G.sel;if(!s){b.classList.add('hidden');return;}b.classList.remove('hidden');
+  const S=SHIPS[s.type];b.innerHTML=`<b>${S.he}</b> <span class="small">${s.order?ORDER_HE[s.order.kind]||'':L('ממתינה','waiting')}${s.cargo?` · ${L('מטען','cargo')} ${s.cargo.amt} ${RHE[s.cargo.res]}`:''}</span>
+   <span class="small">· ${L('הקש על אי או על הים','tap an island or the sea')}</span><button class="btn" id="sStop">${L('עצור','Stop')}</button><button class="btn" id="sX">✕</button>`;
+  $('sStop').onclick=()=>{s.order=null;s.dest=null;updSel();};$('sX').onclick=()=>{G.sel=null;updSel();};}
+function updHud(){const P=HUMAN();$('dayTxt').textContent=L('יום ','Day ')+G.day;
+  $('resbar').innerHTML=RES.map(r=>`<div class="rs ${r==='gold'&&P.broke?'broke':''}">${ic(r,24)}<span>${fmt(P.res[r])}</span></div>`).join('');
+  const f=ownedBy(0).filter(i=>i.b.fortress).length;$('goal').textContent=L(`🏰 איים עם מבצר: ${f} / ${winTarget()}   ·   🏝 איים: ${ownedBy(0).length}`,`🏰 Islands with fortress: ${f} / ${winTarget()}   ·   🏝 Islands: ${ownedBy(0).length}`);
+  $('bPause').classList.toggle('on',G.paused);$('bPlay').classList.toggle('on',!G.paused&&G.speed===1);$('bFast').classList.toggle('on',!G.paused&&G.speed>1);
+  if(G.sel)updSel();}
+$('bPause').onclick=()=>{G.paused=true;updHud();};$('bPlay').onclick=()=>{G.paused=false;G.speed=1;updHud();};$('bFast').onclick=()=>{G.paused=false;G.speed=3;updHud();};
+$('bMenu').onclick=()=>openPanel({type:'menu'});$('bHelp').onclick=()=>openPanel({type:'help'});$('bLog').onclick=()=>openPanel({type:'log'});
+
+function chooseShip(types,target){const s=G.sel;if(s&&s.owner===0&&types.includes(s.type))return s;
+  const c=shipsOf(0).filter(q=>types.includes(q.type));if(!c.length)return null;
+  const idle=c.filter(q=>!q.order),pool=idle.length?idle:c.filter(q=>!q.order||q.order.kind==='collect'||q.order.kind==='move');if(!pool.length)return null;
+  pool.sort((a,b)=>dist(a,target)-dist(b,target));return pool[0];}
+const uiOpen=()=>!$('panel').classList.contains('hidden')||!$('modal').classList.contains('hidden');
+function openPanel(ui){G.ui=ui;if(ui.type==='island'&&!ui.mk)ui.mk={mode:'sell',res:'wood',amt:0};renderPanel();$('panel').classList.remove('hidden');}
+function closePanel(){$('panel').classList.add('hidden');if(G)G.ui=null;}
+function btn(act,label,dis,v){return `<button class="btn" data-act="${act}" ${v!==undefined?`data-v="${v}"`:''} ${dis?'disabled':''}>${label}</button>`;}
+function ownerTxt(is){if(is.pirate)return L('<b>☠️ אי השודדים</b>','<b>☠️ Pirate island</b>');if(is.owner<0)return is.center?L('אי מרכזי – לא ניתן לקנייה','Central island – cannot be bought'):L('אי פנוי','Free island');
+  const P=G.players[is.owner];return `<span class="badge" style="background:${P.color}"></span> ${P.human?L('שלך','yours'):P.name}`;}
+function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-act="close">✕</div>';
+  if(ui.type==='island'){const is=ui.is;const tn=L({wood:'אי עץ',stone:'אי אבן',iron:'אי ברזל'},{wood:'Wood island',stone:'Stone island',iron:'Iron island'})[is.res];
+    h+=`<div class="ttl">${is.name}</div><div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`;
+    const sel=G.sel?`<div class="small">${L('ספינה נבחרת','Selected ship')}: ${SHIPS[G.sel.type].he}</div>`:'';
+    if(is.pirate){h+=`<div class="row">${L('ייצור','Production')}: ${ic(is.res)} +${is.prod} ${L('ליום','/day')}</div><p>${L('אפשר לכבוש את אי השודדים רק עם ספינת מלחמה. ספינת מלחמה נבנית במספנה של אי שיש בו מבצר.','The pirate island can only be taken by a Warrior. A Warrior is built at the shipyard of an island with a fortress.')}</p>`+
+      btn('attack',L('⚔️ שלח ספינת מלחמה','⚔️ Send Warrior'),!shipsOf(0).some(s=>s.type==='warrior'))+sel;}
+    else if(is.owner<0){
+      h+=`<div class="row">${L('במחסן','Storage')}: <b>${fmt(is.storage)}</b> ${ic(is.res)} <span class="small">(+${is.prod} ${L('ליום','/day')})</span></div>`;
+      if(is.build)h+=`<div class="row">🔨 ${L('בתהליך יישוב','Being settled')}: ${Math.floor(is.build.t/is.build.total*100)}% (${G.players[is.build.p].name})</div>`;
+      if(!is.center){h+=`<div class="card"><div class="grow"><b>${L('יישוב האי','Settle the island')}</b><div class="small">${L(`רק פינאס יכולה לקנות אי פנוי, והיא נעלמת אחרי הקנייה. זמן בנייה ${SETTLE_TIME} שניות.`,`Only a Pinasse can buy a free island, and it is used up by the purchase. Build time ${SETTLE_TIME} seconds.`)}</div></div><div>${costHtml(SETTLE,P)}</div>${btn('settle',L('✔ יישב','✔ Settle'),!canSettle(is)||!shipsOf(0).some(s=>s.type==='pinasse'))}</div>`;}
+      h+=`<div class="card"><div class="grow"><b>${L('איסוף סחורה','Collect goods')}</b><div class="small">${L('הספינה תאסוף את הסחורה ותביא אותה לאי הקרוב שלך, שוב ושוב.','The ship will load the goods and bring them to your nearest island, again and again.')}</div></div>${btn('collect',L('📦 שלח ספינה','📦 Send ship'),!ownedBy(0).length||!shipsOf(0).some(s=>s.type==='cog'||s.type==='pinasse'))}</div>`;
+      if(!ownedBy(0).length)h+=`<div class="small red">${L('צריך אי משלך כדי לפרוק בו סחורה.','You need an island of your own to unload goods.')}</div>`;h+=sel;}
+    else if(is.owner!==0){const v=islandValue(is);
+      h+=`<div class="row">${L('שווי האי','Island value')}: <b>${fmt(v)}</b> ${ic('gold')}</div><div class="row small">${L('מבנים','Buildings')}: ${BKEYS.filter(k=>is.b[k]).map(k=>BLD[k].he).join(', ')||L('אין','none')}</div>`;
+      h+=`<div class="card"><div class="grow"><b>${L('קניית האי בדיפלומט','Buy with a diplomat')}</b><div class="small">${L('הדיפלומט ישלם את שווי האי כשיגיע אליו, ונעלם אחרי הקנייה.','The diplomat pays the island value when it arrives, and is used up by the purchase.')}</div></div>${btn('bribe',L('🤝 שלח דיפלומט','🤝 Send diplomat'),!shipsOf(0).some(s=>s.type==='diplomat'))}</div>`+sel;}
+    else{const d=islandDaily(is);
+      h+=`<div class="row">${L('שווי','Value')}: <b>${fmt(islandValue(is))}</b> ${ic('gold',16)} · ${L('ייצור יומי','Daily production')}: <b>+${d.p}</b> ${ic(is.res,16)} · ${L('כסף ליום','Gold per day')}: <b class="${d.g<0?'red':'green'}">${d.g>0?'+':''}${d.g}</b> ${ic('gold',16)}</div>`;
+      if(G.sel)h+=`<div class="row">${btn('move',L(`⚓ שלח לכאן את ה${SHIPS[G.sel.type].he}${G.sel.cargo?' ופרוק':''}`,`⚓ Send the ${SHIPS[G.sel.type].he} here${G.sel.cargo?' and unload':''}`))}</div>`;
+      h+=`<div class="tabs">${btn('tab',L('🏠 מבנים','🏠 Buildings'),0,'bld').replace('class="btn"',`class="btn ${ui.tab==='bld'?'on':''}"`)}${btn('tab',L('⚖️ שוק','⚖️ Market'),0,'mk').replace('class="btn"',`class="btn ${ui.tab==='mk'?'on':''}"`)}${btn('tab',L('⛵ מספנה','⛵ Shipyard'),0,'sy').replace('class="btn"',`class="btn ${ui.tab==='sy'?'on':''}"`)}</div>`;
+      if(ui.tab==='bld'){for(const k of BKEYS){const B=BLD[k];let st;
+          if(is.b[k])st=`<b class="green">✓ ${L('בנוי','Built')}</b>`;else if(is.build&&is.build.key===k)st=`🔨 ${Math.floor(is.build.t/is.build.total*100)}%`;
+          else st=btn('bld',L('בנה','Build'),!!is.build||!afford(P,B.cost),k);
+          h+=`<div class="card"><div class="grow"><b>${B.he}</b><div class="small">${B.desc} · ${B.time} ${L("שנ'",'s')} · ${B.daily>0?'+':''}${B.daily} ${L('כסף ליום','gold/day')}</div><div>${costHtml(B.cost,P)}</div></div>${st}</div>`;}}
+      else if(ui.tab==='mk'){if(!is.b.market)h+=`<p>${L('צריך לבנות שוק באי כדי לסחור.','Build a marketplace on this island to trade.')}</p>`;else h+=marketHtml(ui.mk,P);}
+      else{if(!is.b.shipyard)h+=`<p>${L('צריך לבנות מספנה באי כדי לבנות ספינות.','Build a shipyard on this island to build ships.')}</p>`;
+        else{if(is.sbuild)h+=`<div class="row">🔨 ${L('בונה','Building')} ${SHIPS[is.sbuild.key].he}: ${Math.floor(is.sbuild.t/is.sbuild.total*100)}%</div>`;
+          for(const k of SKEYS){const S=SHIPS[k];const need=S.fort&&!is.b.fortress;
+            h+=`<div class="card"><div class="grow"><b>${S.he}</b><div class="small">${S.desc} · ${L('מטען','cargo')} ${S.cargo} · ${L('מהירות','speed')} ${S.speed} ${L('קשר','knots')} · ${S.time} ${L("שנ'",'s')}</div><div>${costHtml(S.cost,P)}</div>${need?`<div class="small red">${L('דורש מבצר באי!','Requires a fortress!')}</div>`:''}</div>${btn('mkship',L('בנה','Build'),!!is.sbuild||need||!afford(P,S.cost),k)}</div>`;}}}}}
+  else if(ui.type==='wreck'){h+=`<div class="ttl">${L('ספינה טרופה','Ship wreck')}</div><p>${L('בוא נראה מה נשאר שם.','Let us see what was left there.')}</p>`+btn('wreck',L('⛵ שלח ספינה לבדוק','⛵ Send a ship'),!shipsOf(0).length);}
+  else if(ui.type==='menu'){h+=`<div class="ttl">${L('תפריט','Menu')}</div>`+[['resume',L('▶ המשך','▶ Continue')],['sound',L('⚙️ הגדרות','⚙️ Settings')],['help',L('❓ הוראות','❓ How to play')],['about',L('ℹ️ אודות','ℹ️ About')],['quit',L('🚪 יציאה לתפריט הראשי','🚪 Exit to main menu')]].map(([a,l])=>`<button class="btn big" data-act="${a}">${l}</button>`).join('');}
+  else if(ui.type==='help')h+=helpHtml();
+  else if(ui.type==='about')h+=aboutHtml();
+  else if(ui.type==='sound')h+=soundHtml();
+  else if(ui.type==='log')h+=`<div class="ttl">${L('יומן','Log')}</div>`+G.log.slice().reverse().map(l=>`<div class="small">${L('יום','Day')} ${l.d}: ${l.t}</div>`).join('');
+  else if(ui.type==='quit')h+=`<div class="ttl">${L('יציאה','Exit')}</div><p style="text-align:center">${L('לצאת מהמשחק? המשחק הנוכחי לא יישמר.','Leave the game? The current game will not be saved.')}</p><div style="text-align:center">${btn('quitYes',L('כן, צא','Yes, exit'))}${btn('resume',L('לא','No'))}</div>`;
+  $('panelBox').innerHTML=h;}
+function marketHtml(mk,P){const price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const max=mk.mode==='sell'?Math.floor(P.res[mk.res]):Math.floor(P.res.gold/price);mk.amt=Math.min(mk.amt,max);
+  return `<div class="tabs">${btn('mkmode',L('מכירה','Sell'),0,'sell').replace('class="btn"',`class="btn ${mk.mode==='sell'?'on':''}"`)}${btn('mkmode',L('קנייה','Buy'),0,'buy').replace('class="btn"',`class="btn ${mk.mode==='buy'?'on':''}"`)}</div>
+  <div class="tabs">${['wood','stone','iron','steel'].map(r=>`<button class="btn ${mk.res===r?'on':''}" data-act="mkres" data-v="${r}">${ic(r,20)} ${mk.mode==='sell'?SELL[r]:BUY[r]}${ic('gold',14)}</button>`).join('')}</div>
+  <input type="range" id="mkAmt" min="0" max="${max}" step="1" value="${mk.amt}">
+  <div class="row" style="justify-content:center"><b id="mkLbl"></b>${btn('mkdo',L('✔ אישור','✔ OK'))}</div>`;}
+function mkLabel(){const mk=G.ui.mk,price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const e=$('mkLbl');if(e)e.innerHTML=L(`${mk.mode==='sell'?'מכור':'קנה'} ${mk.amt} ${RHE[mk.res]} ב-${fmt(mk.amt*price)} ${ic('gold',16)}`,`${mk.mode==='sell'?'Sell':'Buy'} ${mk.amt} ${RHE[mk.res]} for ${fmt(mk.amt*price)} ${ic('gold',16)}`);}
+function act(a,v){const P=HUMAN(),ui=G.ui,is=ui&&ui.is;sfx('tap');
+  switch(a){
+  case 'close':case 'resume':closePanel();return;
+  case 'tab':ui.tab=v;break;
+  case 'bld':startBuild(P,is,v);break;
+  case 'mkship':startShip(P,is,v);break;
+  case 'settle':{const s=chooseShip(['pinasse'],is);if(!s){toast(L('אין פינאס פנויה','No Pinasse available'));return;}order(s,'settle',is);closePanel();toast(L('הפינאס יוצאת ליישב את ','The Pinasse sails to settle ')+is.name);G.sel=null;updSel();return;}
+  case 'collect':{const s=chooseShip(['cog','pinasse'],is);if(!s){toast(L('אין ספינת משא פנויה','No cargo ship available'));return;}sendCollect(s,is);closePanel();toast(SHIPS[s.type].he+L(' יוצאת לאסוף סחורה',' sails to collect goods'));G.sel=null;updSel();return;}
+  case 'bribe':{const s=chooseShip(['diplomat'],is);if(!s){toast(L('אין דיפלומט','No diplomat'));return;}order(s,'bribe',is);closePanel();toast(L('הדיפלומט יוצא לדרך','The diplomat sets sail'));G.sel=null;updSel();return;}
+  case 'attack':{const s=chooseShip(['warrior'],is);if(!s){toast(L('אין ספינת מלחמה','No Warrior'));return;}order(s,'attack',is);closePanel();toast(L('ספינת המלחמה יוצאת לקרב!','The Warrior sails to battle!'));G.sel=null;updSel();return;}
+  case 'wreck':{const s=chooseShip(['cog','pinasse','diplomat','warrior'],ui.w);if(!s){toast(L('אין ספינה פנויה','No ship available'));return;}order(s,'wreck',ui.w);closePanel();G.sel=null;updSel();return;}
+  case 'move':if(G.sel){order(G.sel,'move',is);closePanel();}return;
+  case 'mkmode':ui.mk.mode=v;ui.mk.amt=0;break;
+  case 'mkres':ui.mk.res=v;ui.mk.amt=0;break;
+  case 'mkdo':{const mk=ui.mk;if(mk.amt<=0)return;if(mk.mode==='sell'){if(P.res[mk.res]<mk.amt)return;P.res[mk.res]-=mk.amt;P.res.gold+=mk.amt*SELL[mk.res];}
+    else{const c=mk.amt*BUY[mk.res];if(P.res.gold<c)return;P.res.gold-=c;P.res[mk.res]+=mk.amt;}sfx('coins');mk.amt=0;updHud();break;}
+  case 'sound':case 'help':case 'about':G.ui={type:a};break;
+  case 'quit':G.ui={type:'quit'};break;
+  case 'quitYes':closePanel();endGame();show('mainMenu');return;
+  case 'snd':SND.cfg[v]=!SND.cfg[v];saveSnd();if(v==='music')setMusic();break;
+  case 'lang':setLang(v);break;
+  }
+  renderPanel();if(ui&&ui.type==='island'&&ui.tab==='mk')mkLabel();}
+$('panel').addEventListener('click',e=>{if(e.target.id==='panel'){closePanel();return;}const el=e.target.closest('[data-act]');if(!el||el.disabled)return;act(el.dataset.act,el.dataset.v);});
+$('panel').addEventListener('input',e=>{if(e.target.id==='mkAmt'){G.ui.mk.amt=+e.target.value;mkLabel();}});
+let modalQ=[];
+function modal(title,body,btns){modalQ.push({title,body,btns:btns||[[L('אישור','OK')]]});if($('modal').classList.contains('hidden'))nextModal();}
+function nextModal(){const m=modalQ.shift();if(!m){$('modal').classList.add('hidden');return;}
+  $('modalBox').innerHTML=`<div class="ttl">${m.title}</div>${m.body}<div style="margin-top:8px">${m.btns.map((b,i)=>`<button class="btn" data-mi="${i}">${b[0]}</button>`).join('')}</div>`;
+  $('modalBox').querySelectorAll('[data-mi]').forEach(el=>el.onclick=()=>{const f=m.btns[+el.dataset.mi][1];nextModal();if(f)f();});$('modal').classList.remove('hidden');}
+
+function soundHtml(){const Lst=[['music',L('🎵 מוזיקת רקע','🎵 Background music')],['pirates',L('☠️ התקפות שודדים','☠️ Pirate attacks')],['island',L('🏝 קניית אי ובנייה','🏝 Buying islands and building')],['ship',L('⛵ השקת ספינה','⛵ Ship launch')],['ui',L('👆 לחיצות ומטבעות','👆 Taps and coins')]];
+  return `<div class="ttl">${L('הגדרות','Settings')}</div><div class="card"><div class="grow"><b>${L('🌐 שפה','🌐 Language')}</b></div><button class="btn ${LANG==='he'?'on':''}" data-act="lang" data-v="he">עברית</button><button class="btn ${LANG==='en'?'on':''}" data-act="lang" data-v="en">English</button></div>`+
+  `<div class="small" style="margin:6px 2px 0"><b>${L('צלילים','Sounds')}</b></div>`+Lst.map(([k,l])=>`<div class="card"><div class="grow"><b>${l}</b></div><button class="btn ${SND.cfg[k]?'on':''}" data-act="snd" data-v="${k}">${SND.cfg[k]?L('פועל','On'):L('כבוי','Off')}</button></div>`).join('');}
+function aboutHtml(){return `<div class="ttl">${L('אודות','About')}</div><div style="text-align:center;font-size:20px;margin:14px 0">${L('גרסה','Version')} ${VERSION}</div>`;}
+const TX={title:['איי הזהב','Gold Islands'],mRandom:['⛵ משחק אקראי','⛵ Random game'],mLevels:['🗺️ שלבים','🗺️ Levels'],mSettings:['⚙️ הגדרות','⚙️ Settings'],mHelp:['❓ הוראות','❓ How to play'],mAbout:['ℹ️ אודות','ℹ️ About'],
+ sTitle:['משחק אקראי','Random game'],sIsl:['מספר איים','Number of islands'],sPl:['מספר שחקנים (כולל אותך)','Number of players (including you)'],sDiff:['רמת קושי','Difficulty'],d0:['קל','Easy'],d1:['רגיל','Normal'],d2:['קשה','Hard'],
+ sPir:['שודדים','Pirates'],sHid:['איים נסתרים','Hidden islands'],sStart:['⚓ התחל','⚓ Start']};
+function applyLang(){document.documentElement.dir=LANG==='en'?'ltr':'rtl';document.documentElement.lang=LANG;document.title=L('איי הזהב','Gold Islands');
+  document.querySelectorAll('[data-t]').forEach(e=>{const t=TX[e.dataset.t];if(t)e.textContent=L(t[0],t[1]);});$('verTxt').textContent=L('גרסה ','Version ')+VERSION;if(G)updHud();}
+function setLang(v){LANG=v;try{localStorage.setItem('gi_lang',v);}catch(e){}applyLang();}
+function helpHtml(){const tg=G?winTarget():L('10 או מחצית מהאיים','10, or half of the islands');
+const bt=`<table class="t"><tr><th>${L('מבנה','Building')}</th><th>${L('תפקיד','Purpose')}</th><th>${L('ליום','Per day')}</th></tr>${BKEYS.map(k=>`<tr><td>${BLD[k].he}</td><td>${BLD[k].desc}</td><td>${BLD[k].daily>0?'+':''}${BLD[k].daily}</td></tr>`).join('')}</table>`;
+const st=`<table class="t"><tr><th>${L('ספינה','Ship')}</th><th>${L('מטען','Cargo')}</th><th>${L('מהירות','Speed')}</th></tr>${SKEYS.map(k=>`<tr><td>${SHIPS[k].he}</td><td>${SHIPS[k].cargo}</td><td>${SHIPS[k].speed}</td></tr>`).join('')}</table>`;
+if(LANG==='en')return `<div class="ttl">How to play</div><div class="help">
+<h4>🎯 Goal</h4><p>Be the first to hold ${tg} islands with a fortress on each one. A player whose islands are all bought is out.</p>
+<h4>🖐 Controls</h4><p>Drag to move the map, pinch with two fingers to zoom. Tap one of your ships to select it, then tap an island or the sea to send it. Tap an island to see its details.</p>
+<h4>🏝 Islands</h4><p>There are wood, stone and iron islands. A regular island produces 12–19 a day. The dark islands in the middle are central islands: they cannot be bought, but they produce 20–35 a day and you can collect from them.</p>
+<p>To buy a free island, send a Pinasse to it. It costs 200 gold, 200 wood and 200 stone, takes 10 seconds, and the Pinasse is used up. Each island you own costs 4 gold a day, and its production goes straight to your stock.</p>
+<p>From islands that are not yours, cargo ships collect the goods and bring them to your nearest island.</p>
+<h4>🏠 Buildings</h4>${bt}
+<h4>⛵ Ships</h4>${st}
+<p>The Diplomat and the Warrior can only be built at the shipyard of an island with a fortress. Ships that collide push each other: a heavier, faster ship pushes harder.</p>
+<h4>☠️ Pirates</h4><p>Right after the first island is bought, the pirates set out to attack. They steal 60%–80% of all resources and destroy one building. 40 seconds after returning they sail again. A fortress sinks their ship. A Warrior that reaches the pirate island destroys them.</p>
+<h4>🤝 Diplomat</h4><p>The only way to buy an island another player owns. The price starts at 1,500 and rises by 10 each day and by half the gold cost of each building on the island. The diplomat is used up by the purchase.</p>
+<h4>💸 Out of gold</h4><p>When gold runs out, ships and production slow down by a third.</p>
+<h4>🪦 Ship wrecks</h4><p>There are 3 ship wrecks at the start of the game. Send a ship to one and you will find resources.</p></div>`;
+return `<div class="ttl">הוראות</div><div class="help">
+<h4>🎯 המטרה</h4><p>להיות הראשון שמחזיק ${tg} איים, ועל כל אחד מהם מבצר. שחקן שכל האיים שלו נקנו – מודח.</p>
+<h4>🖐 שליטה</h4><p>גרירה מזיזה את המפה, צביטה בשתי אצבעות מגדילה ומקטינה. הקשה על ספינה שלך בוחרת אותה, ואז הקשה על אי או על הים שולחת אותה. הקשה על אי פותחת את פרטיו.</p>
+<h4>🏝 איים</h4><p>יש איי עץ, אבן וברזל. אי רגיל מייצר 12–19 ליום. האיים השחורים במרכז הם איי מרכז: אי אפשר לקנות אותם, אבל הם מייצרים 20–35 ליום ואפשר לאסוף מהם.</p>
+<p>כדי לקנות אי פנוי שולחים אליו פינאס. הקנייה עולה 200 כסף, 200 עץ ו-200 אבן, לוקחת 10 שניות, והפינאס נעלמת. כל אי שלך עולה 4 כסף ליום, והייצור שלו נכנס ישר למלאי.</p>
+<p>מאיים שאינם שלך אוספים סחורה עם ספינות משא, שמביאות אותה לאי הקרוב שלך.</p>
+<h4>🏠 מבנים</h4>${bt}
+<h4>⛵ ספינות</h4>${st}
+<p>דיפלומט וספינת מלחמה נבנים רק במספנה של אי שיש בו מבצר. ספינות שמתנגשות דוחפות זו את זו: ספינה כבדה ומהירה דוחפת חזק יותר.</p>
+<h4>☠️ שודדים</h4><p>מיד אחרי קניית האי הראשון השודדים יוצאים לתקוף. הם גונבים 60%–80% מכל המשאבים והורסים מבנה אחד. 40 שניות אחרי שחזרו הם יוצאים שוב. מבצר מטביע את ספינתם. ספינת מלחמה שמגיעה לאי השודדים משמידה אותם.</p>
+<h4>🤝 דיפלומט</h4><p>הדרך היחידה לקנות אי של שחקן אחר. המחיר מתחיל ב-1,500 ועולה ב-10 כל יום ובמחצית מעלות הכסף של כל מבנה באי. הדיפלומט נעלם אחרי הקנייה.</p>
+<h4>💸 חוסר כסף</h4><p>כשהכסף נגמר, הספינות והייצור יורדים בשליש.</p>
+<h4>🪦 ספינות טרופות</h4><p>בתחילת המשחק יש 3 ספינות טרופות בים. שלח אליהן ספינה ותמצא משאבים.</p></div>`;}
+
+/* ================= מסכים ================= */
+function show(id){['mainMenu','setup','info'].forEach(x=>$(x).classList.toggle('hidden',x!==id));}
+function showInfo(type){$('infoBox').innerHTML='<div class="close" data-go="mainMenu">✕</div>'+(type==='help'?helpHtml():type==='about'?aboutHtml():soundHtml());show('info');}
+document.addEventListener('click',e=>{const el=e.target.closest('[data-go]');if(!el)return;audioInit();sfx('tap');const g=el.dataset.go;
+  if(g==='help'||g==='about'||g==='sound')showInfo(g);else show(g);});
+$('infoBox').addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;if(el.dataset.act==='lang'){setLang(el.dataset.v);showInfo('sound');return;}if(el.dataset.act!=='snd')return;SND.cfg[el.dataset.v]=!SND.cfg[el.dataset.v];saveSnd();if(el.dataset.v==='music')setMusic();showInfo('sound');});
+$('bLevels').onclick=()=>{audioInit();toast2(L('השלבים יגיעו בגרסה הבאה','Levels are coming in a later version'));};
+function toast2(t){const e=$('toast');$('hud').classList.remove('hidden');e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>{e.style.opacity=0;if(!G)$('hud').classList.add('hidden');},2200);}
+$('sIsl').oninput=e=>$('vIsl').textContent=e.target.value;$('sPl').oninput=e=>$('vPl').textContent=e.target.value;
+let diff=1;$('diffBtns').onclick=e=>{const b=e.target.closest('[data-diff]');if(!b)return;diff=+b.dataset.diff;$('diffBtns').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));};
+$('bStart').onclick=()=>{audioInit();const pl=+$('sPl').value,isl=Math.max(+$('sIsl').value,pl*2+2);
+  newGame({islands:isl,players:pl,pirates:$('cPir').checked,hidden:$('cHid').checked,diff});show(null);$('hud').classList.remove('hidden');updHud();
+  toast(L('הקש על הפינאס שלך ואז על אי כדי ליישב אותו','Tap your Pinasse, then an island, to settle it'));};
+function endGame(){G=null;modalQ=[];$('modal').classList.add('hidden');$('panel').classList.add('hidden');$('hud').classList.add('hidden');}
+applyLang();
+window.handleBack=function(){
+  if(!$('modal').classList.contains('hidden'))return true;
+  if(!$('panel').classList.contains('hidden')){closePanel();return true;}
+  if(G){openPanel({type:'menu'});return true;}
+  if(!$('mainMenu').classList.contains('hidden'))return false;
+  show('mainMenu');return true;};
+window.appPaused=function(){if(G){G.paused=true;updHud();}if(SND.ctx)SND.ctx.suspend();};
+document.addEventListener('visibilitychange',()=>{if(!SND.ctx)return;if(document.hidden)SND.ctx.suspend();else SND.ctx.resume();});
+
+/* ================= לולאה ================= */
+function resize(){DPR=Math.min(window.devicePixelRatio||1,2);SW=innerWidth;SH=innerHeight;cv.width=SW*DPR;cv.height=SH*DPR;clampCam();}
+addEventListener('resize',resize);resize();
+let last=performance.now(),hudT=0;
+function frame(now){const rdt=Math.min(.1,(now-last)/1000);last=now;
+  try{if(G&&!G.over&&!G.paused&&!uiOpen()){let gdt=rdt*G.speed;while(gdt>1e-6){const d=Math.min(gdt,.05);update(d);gdt-=d;}}
+    if(G){for(const f of G.fx)f.t+=rdt;G.fx=G.fx.filter(f=>f.t<2.5);hudT-=rdt;if(hudT<=0&&G){hudT=.25;updHud();}}
+    musicTick();draw();}catch(err){console.error(err);}
+  requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
