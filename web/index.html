@@ -39,6 +39,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 #dayTxt{font-size:19px;font-weight:bold;font-family:Georgia,serif;margin-bottom:3px}
 .hb{width:42px;height:38px;border:none;background:rgba(0,0,0,.18);border-radius:8px;color:#fff;font-size:20px;margin-inline-end:3px}
 .hb.on{background:rgba(255,200,60,.55)}
+.hb.pulse{animation:pl 1s ease-in-out infinite}@keyframes pl{50%{background:rgba(255,200,60,.85);transform:scale(1.12)}}
 #resbar{position:absolute;left:50%;transform:translateX(-50%);bottom:4px;background:linear-gradient(#f0dcae,#d9bb80);border:3px solid #8a5a24;border-radius:12px 12px 8px 8px;padding:3px 12px;display:flex;gap:14px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .rs{display:flex;flex-direction:column;align-items:center;min-width:42px;font-family:Georgia,serif;font-size:17px;line-height:1}
 .rs .ic{width:24px;height:22px}
@@ -126,7 +127,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.4';
+const VERSION='1.0.5';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -229,7 +230,7 @@ const winTarget=()=>Math.min(10,Math.ceil(G.islands.length/2));
 
 function newGame(opt){
   const N=opt.islands, area=N*230000, H=Math.sqrt(area/1.6), W=H*1.6;
-  G={W,H,time:0,day:1,dayT:0,speed:1,paused:false,islands:[],ships:[],wrecks:[],players:[],order:[],log:[],over:false,opt,nid:1,fx:[],sel:null,ui:null,visT:0,
+  G={W,H,time:0,day:1,dayT:0,speed:1,paused:true,islands:[],ships:[],wrecks:[],players:[],order:[],log:[],over:false,opt,nid:1,fx:[],sel:null,ui:null,visT:0,
      pir:{island:null,ship:null,k:0,fails:{},cd:-1,started:false,dead:!opt.pirates,target:-1},waves:[]};
   for(let i=0;i<opt.players;i++)G.players.push({id:i,human:i===0,get name(){return this.human?L('אתה','You'):L('מחשב ','Computer ')+COLORS[this.id][LANG==='en'?2:0]},color:COLORS[i][1],
     res:{gold:500,wood:600,stone:500,iron:0,steel:0},broke:false,alive:true,had:false,raided:0,aiT:rnd(.5,2)});
@@ -261,7 +262,7 @@ function newGame(opt){
 function spawnShip(type,owner,x,y){const s={id:G.nid++,type,owner,x,y,vx:0,vy:0,a:rnd(0,6.28),order:null,dest:null,cargo:null,sink:0,wait:0};G.ships.push(s);return s;}
 const shipsOf=p=>G.ships.filter(s=>s.owner===p&&!s.sink);
 function log(t){G.log.push({d:G.day,t});if(G.log.length>120)G.log.shift();}
-function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,2600);}
+function toast(t,ms){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,ms||2600);}
 function fx(x,y,text,color){G.fx.push({x,y,text,color:color||'#fff',t:0});}
 
 /* ================= פקודות ספינות ================= */
@@ -590,7 +591,7 @@ function updSel(){const b=$('selbar');const s=G&&G.sel;if(!s){b.classList.add('h
 function updHud(){const P=HUMAN();$('dayTxt').textContent=L('יום ','Day ')+G.day;
   $('resbar').innerHTML=RES.map(r=>`<div class="rs ${r==='gold'&&P.broke?'broke':''}">${ic(r,24)}<span>${fmt(P.res[r])}</span></div>`).join('');
   const f=ownedBy(0).filter(i=>i.b.fortress).length;$('goal').textContent=L(`🏰 איים עם מבצר: ${f} / ${winTarget()}   ·   🏝 איים: ${ownedBy(0).length}`,`🏰 Islands with fortress: ${f} / ${winTarget()}   ·   🏝 Islands: ${ownedBy(0).length}`);
-  $('bPause').classList.toggle('on',G.paused);$('bPlay').classList.toggle('on',!G.paused&&G.speed===1);$('bFast').classList.toggle('on',!G.paused&&G.speed>1);
+  $('bPause').classList.toggle('on',G.paused);$('bPlay').classList.toggle('on',!G.paused&&G.speed===1);$('bPlay').classList.toggle('pulse',G.paused&&G.time===0);$('bFast').classList.toggle('on',!G.paused&&G.speed>1);
   if(G.sel)updSel();}
 $('bPause').onclick=()=>{G.paused=true;updHud();};$('bPlay').onclick=()=>{G.paused=false;G.speed=1;updHud();};$('bFast').onclick=()=>{G.paused=false;G.speed=3;updHud();};
 $('bMenu').onclick=()=>openPanel({type:'menu'});$('bHelp').onclick=()=>openPanel({type:'help'});$('bLog').onclick=()=>openPanel({type:'log'});
@@ -733,7 +734,7 @@ $('sIsl').oninput=e=>$('vIsl').textContent=e.target.value;$('sPl').oninput=e=>$(
 let diff=1;$('diffBtns').onclick=e=>{const b=e.target.closest('[data-diff]');if(!b)return;diff=+b.dataset.diff;$('diffBtns').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));};
 $('bStart').onclick=()=>{audioInit();const pl=+$('sPl').value,isl=Math.max(+$('sIsl').value,pl*2+2);
   newGame({islands:isl,players:pl,pirates:$('cPir').checked,hidden:$('cHid').checked,diff});show(null);$('hud').classList.remove('hidden');updHud();
-  toast(L('הקש על הפינאס שלך ואז על אי כדי ליישב אותו','Tap your Pinasse, then an island, to settle it'));};
+  toast(L('המשחק מושהה. כשתהיה מוכן לחץ ▶. אפשר כבר לבחור את הפינאס ולשלוח אותה לאי','The game is paused. Press ▶ when you are ready. You can already select your Pinasse and send it to an island'),6000);};
 function endGame(){G=null;modalQ=[];$('modal').classList.add('hidden');$('panel').classList.add('hidden');$('hud').classList.add('hidden');}
 applyLang();
 window.handleBack=function(){
