@@ -27,7 +27,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .ic{display:inline-block;vertical-align:middle}
 .ic svg{width:100%;height:100%;display:block}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0}
-.card{border:1px solid #b89458;border-radius:9px;padding:6px 9px;margin:6px 0;background:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px}
+.card{border:1px solid #b89458;border-radius:9px;padding:6px 9px;margin:6px 0;background:rgba(255,255,255,.22);display:flex;align-items:center;gap:8px}
 .card .grow{flex:1;min-width:0}
 .card b{font-size:15px}
 .small{font-size:12.5px;opacity:.85}
@@ -131,7 +131,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.6';
+const VERSION='1.0.7';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -144,6 +144,8 @@ wood:'<svg viewBox="0 0 24 24"><rect x="1" y="12" width="19" height="6.5" rx="3"
 stone:'<svg viewBox="0 0 24 24"><path d="M2 19l3-7 7-2 5 3 5 6z" fill="#b8bcc2" stroke="#6b7078"/><path d="M7 12l3-7 6 2 1 6z" fill="#e3e6ea" stroke="#6b7078"/></svg>',
 iron:'<svg viewBox="0 0 24 24"><path d="M2 19c0-6 4-10 10-10s10 4 10 10z" fill="#5a3f5e" stroke="#2e1f30"/><circle cx="8" cy="15" r="1.8" fill="#b07a9e"/><circle cx="15" cy="13" r="1.5" fill="#b07a9e"/><circle cx="12" cy="17" r="1.2" fill="#c98bb4"/></svg>',
 steel:'<svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="3" fill="#cfd6dd" stroke="#77818b"/><rect x="8" y="5" width="3" height="14" rx="1.5" fill="#fff" opacity=".8"/></svg>'};
+const ICIMG={};for(const k in ICON){const im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(ICON[k].replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" '));ICIMG[k]=im;}
+const TCOL={wood:'#2e7d32',stone:'#78808a',iron:'#8e2b3b'};
 const ic=(r,s=18)=>`<span class="ic" style="width:${s}px;height:${s}px">${ICON[r]}</span>`;
 const BLD={
  market:{h:'שוק',en:'Marketplace',cost:{wood:50,stone:25},time:5,daily:20,dh:'מאפשר לקנות ולמכור סחורות',de:"Allows buying and selling goods"},
@@ -294,7 +296,7 @@ function arrive(s){
     if(t.b.fortress){if(P.human)toast(L('לאי יש מבצר – הוא מוגן ואי אפשר לקנות אותו','The island has a fortress – it is protected and cannot be bought'));break;}
     const v=islandValue(t);if(P.res.gold<v){if(P.human)toast(L(`אין מספיק כסף. נדרש ${fmt(v)}`,`Not enough gold. ${fmt(v)} needed`));break;}
     P.res.gold-=v;s.dead=true;transfer(t,s.owner,'diplomat');break;}
-  case 'attack':{s.order=null;if(t.pirate)killPirates(s.owner);break;}
+  case 'attack':{s.order=null;if(t.pirate){s.dead=true;if(G.sel===s){G.sel=null;updSel();}killPirates(s.owner);}break;}
   case 'raid': pirRaid(s,t);break;
   case 'pirhome': s.dead=true;G.pir.ship=null;G.pir.cd=40;break;
   }
@@ -337,8 +339,8 @@ function pirRaid(s,t){const pr=G.pir;let p=pr.target;
   if(P.human){sfx('pirate');modal(L('פלישת שודדים','Pirate invasion'),`<p>${L(`השודדים פשטו על <b>${t.name}</b>${des?` והרסו את ה<b>${BLD[des].he}</b>`:''}.`,`Pirates raided <b>${t.name}</b>${des?` and destroyed the <b>${BLD[des].he}</b>`:''}.`)}</p><p>${L('הם גנבו ממך:','They stole from you:')}</p><div class="row" style="justify-content:center">${costHtml(stolen)||L('כלום','nothing')}</div>`,[[L('👁 הצג','👁 Show'),()=>{cam.x=t.x;cam.y=t.y;clampCam();}],[L('סגור','Close')]]);}
   order(s,'pirhome',pr.island);}
 function killPirates(by){const pr=G.pir;if(pr.dead)return;pr.dead=true;if(pr.ship){pr.ship.sink=.01;pr.ship=null;}
-  pr.island.pirate=false;pr.island.since=G.day;makeIslandImg(pr.island);const P=G.players[by];log(L(`${P.name} השמיד את השודדים`,`${P.name} destroyed the pirates`));
-  if(P.human){sfx('win');modal(L('ניצחון על השודדים!','Pirates defeated!'),L(`<p>ספינת המלחמה שלך השמידה את מושבת השודדים.</p><p>${pr.island.name} הוא עכשיו אי ברזל פנוי שאפשר ליישב.</p>`,`<p>Your warrior destroyed the pirate settlement.</p><p>${pr.island.name} is now a free iron island you can settle.</p>`));}
+  pr.by=by;const pi=pr.island;pi.pirate=false;pi.since=G.day;pi.owner=by;pi.storage=0;makeIslandImg(pi);const P=G.players[by];firstIsland(by);log(L(`${P.name} השמיד את השודדים`,`${P.name} destroyed the pirates`));
+  if(P.human){sfx('win');modal(L('ניצחון על השודדים!','Pirates defeated!'),L(`<p>ספינת המלחמה שלך השמידה את מושבת השודדים.</p><p><b>${pi.name}</b> הוא עכשיו אי ברזל שלך.</p>`,`<p>Your Warrior destroyed the pirate settlement.</p><p><b>${pi.name}</b> is now your iron island.</p>`));}
   else if(G.players[0].alive)toast(L(`${P.name} השמיד את השודדים`,`${P.name} destroyed the pirates`));}
 
 /* ================= בנייה ================= */
@@ -366,8 +368,15 @@ function dayTick(){
   const tg=winTarget();for(const P of G.players){if(!P.alive)continue;const f=ownedBy(P.id).filter(i=>i.b.fortress).length;if(f>=tg){gameOver(P.human,P);return;}}
 }
 function islandDaily(is){const P=G.players[is.owner];let p=is.prod*(is.b.miner?2:1);if(P&&P.broke)p=Math.round(p*2/3);let g=-EMPTY_UPKEEP;for(const k of BKEYS)if(is.b[k])g+=BLD[k].daily;return{p,g};}
-function gameOver(win,P){if(G.over)return;G.over=true;sfx(win?'win':'lose');
-  modal(win?L('ניצחת! 🏆','You won! 🏆'):L('המשחק נגמר','Game over'),win?L(`<p>כל הכבוד! הגעת ליעד ביום ${G.day}.</p>`,`<p>Well done! You reached the goal on day ${G.day}.</p>`):`<p>${P&&!P.human?P.name+L(' הגיע ראשון ליעד.',' reached the goal first.'):L('הפסדת את כל האיים שלך.','You lost all your islands.')}</p>`,
+function statsHtml(){const rows=G.players.map(P=>({P,isl:ownedBy(P.id).length,f:ownedBy(P.id).filter(i=>i.b.fortress).length,sh:shipsOf(P.id).length}));
+  rows.sort((a,b)=>b.f-a.f||b.isl-a.isl);const mm=Math.floor(G.time/60),ss=String(Math.floor(G.time%60)).padStart(2,'0');
+  return `<table class="t" style="margin:6px 0"><tr><th></th><th>${L('שחקן','Player')}</th><th>🏝 ${L('איים','Islands')}</th><th>🛡️ ${L('מוגנים','Protected')}</th><th>⛵ ${L('ספינות','Ships')}</th></tr>`+
+   rows.map(r=>`<tr style="${r.P.human?'font-weight:bold':''}"><td><span class="badge" style="background:${r.P.color}"></span></td><td>${r.P.name}${r.P.alive?'':' ✝'}</td><td>${r.isl}</td><td>${r.f}</td><td>${r.sh}</td></tr>`).join('')+`</table>
+   <div class="small">📅 ${L('יום','Day')} ${G.day} · ⏱ ${L('זמן משחק','Play time')} ${mm}:${ss} · 🎯 ${L('היעד','Goal')}: ${winTarget()} ${L('איים מוגנים','protected islands')}</div>`;}
+function gameOver(win,P){if(G.over)return;G.over=true;sfx(win?'win':'lose');const H=HUMAN(),hf=ownedBy(0).filter(i=>i.b.fortress).length;
+  const head=win?L(`<p>כל הכבוד! תוך <b>${G.day}</b> ימים הגעת ל-<b>${hf}</b> איים מוגנים במבצר${G.pir.dead&&G.pir.by===0?' והשמדת את השודדים':''}.</p>`,`<p>Well done! In <b>${G.day}</b> days you reached <b>${hf}</b> islands protected by a fortress${G.pir.dead&&G.pir.by===0?' and destroyed the pirates':''}.</p>`)
+    :`<p>${P&&!P.human?L(`${P.name} הגיע ראשון ליעד ביום ${G.day}.`,`${P.name} reached the goal first, on day ${G.day}.`):L('הפסדת את כל האיים שלך.','You lost all your islands.')}</p>`;
+  modal(win?L('ניצחת! 🏆','You won! 🏆'):L('המשחק נגמר','Game over'),head+statsHtml(),
     [[L('משחק חדש','New game'),()=>{endGame();show('setup');}],[L('תפריט ראשי','Main menu'),()=>{endGame();show('mainMenu');}]]);}
 
 /* ================= תנועה ================= */
@@ -509,6 +518,8 @@ function drawIsland(is){
   if(is.owner>=0){drawIcon('house',is.x+2,is.y+2,1);for(const k of BKEYS)if(is.b[k])drawIcon(k,is.x+SLOTS[k][0]*r,is.y+SLOTS[k][1]*r,k==='fortress'?1.1:1);
     drawFlag(is.x+r*.25,is.y-r*.55,G.players[is.owner].color,false,1);}
   if(is.pirate)drawFlag(is.x+r*.2,is.y-r*.5,'#000',true,1.1);
+  {const bs=Math.max(8.5/cam.z,r*.3),bx=is.x-r*.95,by=is.y-r*.7;ctx.save();ctx.fillStyle=is.pirate?'#111':TCOL[is.res];ctx.strokeStyle=is.center?'#ffd54f':'#fff';ctx.lineWidth=Math.max(2/cam.z,1.5);
+   ctx.beginPath();ctx.arc(bx,by,bs,0,7);ctx.fill();ctx.stroke();const im=ICIMG[is.res];if(im.complete)ctx.drawImage(im,bx-bs*.72,by-bs*.72,bs*1.44,bs*1.44);ctx.restore();}
   const b=is.build||is.sbuild;
   if(b){const pct=Math.floor(b.t/b.total*100);ctx.save();ctx.font=`bold ${Math.max(12,13/cam.z)}px Arial`;ctx.textAlign='center';ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.7)';ctx.lineWidth=3/cam.z+1;
     const y=is.y-r-28;ctx.strokeText(pct+'%',is.x,y);ctx.fillText(pct+'%',is.x,y);
@@ -610,10 +621,15 @@ function closePanel(){$('panel').classList.add('hidden');if(G)G.ui=null;}
 function btn(act,label,dis,v){return `<button class="btn" data-act="${act}" ${v!==undefined?`data-v="${v}"`:''} ${dis?'disabled':''}>${label}</button>`;}
 function ownerTxt(is){if(is.pirate)return L('<b>☠️ אי השודדים</b>','<b>☠️ Pirate island</b>');if(is.owner<0)return is.center?L('אי מרכזי – לא ניתן לקנייה','Central island – cannot be bought'):L('אי פנוי','Free island');
   const P=G.players[is.owner];return `<span class="badge" style="background:${P.color}"></span> ${P.human?L('שלך','yours'):P.name}`;}
+const ART={
+wood:`<g fill="#2e6b2f"><path d="M40 150 70 60 100 150z"/><path d="M48 120 70 40 92 120z"/><path d="M95 160 135 40 175 160z"/><path d="M105 125 135 20 165 125z"/><path d="M180 150 205 80 230 150z"/></g><g fill="#6d4c2f"><rect x="65" y="150" width="10" height="22"/><rect x="129" y="160" width="12" height="20"/><rect x="200" y="150" width="9" height="20"/></g><g fill="#a8743a" stroke="#6d4c2f" stroke-width="2"><rect x="215" y="160" width="70" height="16" rx="8"/><rect x="225" y="144" width="60" height="16" rx="8"/><rect x="235" y="128" width="50" height="16" rx="8"/></g><g fill="#e2c08a" stroke="#6d4c2f" stroke-width="2"><circle cx="285" cy="168" r="8"/><circle cx="285" cy="152" r="8"/><circle cx="285" cy="136" r="8"/></g><path d="M0 185 Q150 165 300 185 V200 H0z" fill="#7a9a3a"/>`,
+stone:`<path d="M0 185 Q150 170 300 185 V200 H0z" fill="#9e9e9e"/><g stroke="#5f6670" stroke-width="2"><path d="M20 180 50 110 110 95 150 140 160 180z" fill="#b8bcc2"/><path d="M50 110 75 70 120 80 110 95z" fill="#e3e6ea"/><path d="M150 180 175 120 230 110 270 150 280 180z" fill="#a4aab2"/><path d="M175 120 205 90 240 100 230 110z" fill="#d7dbe0"/></g><g fill="#cfd3d8" stroke="#5f6670" stroke-width="2"><rect x="200" y="150" width="34" height="22"/><rect x="236" y="150" width="34" height="22"/><rect x="218" y="128" width="34" height="22"/></g><path d="M120 60 l20 -25 l6 5 l-20 25z" fill="#6d4c2f"/><path d="M134 34 l16 -6 l-4 14z" fill="#8a8f96"/>`,
+iron:`<path d="M0 190 L70 70 L120 120 L170 40 L260 160 L300 190z" fill="#4a3a4e"/><g fill="#b23a48"><path d="M80 110 l14 6 l-6 12 l-12 -4z"/><path d="M150 90 l12 4 l-4 12 l-12 -5z"/><path d="M190 120 l16 3 l-5 13 l-13 -5z"/><path d="M120 150 l10 3 l-3 9 l-10 -4z"/></g><path d="M150 190 v-35 a22 22 0 0 1 44 0 v35z" fill="#1b1b1b"/><g fill="#6d4c2f"><rect x="222" y="160" width="60" height="22"/></g><g fill="#5a3f5e"><circle cx="232" cy="158" r="8"/><circle cx="248" cy="154" r="9"/><circle cx="265" cy="158" r="8"/></g><g fill="#333"><circle cx="232" cy="186" r="6"/><circle cx="272" cy="186" r="6"/></g><path d="M0 192 H300" stroke="#5d4037" stroke-width="4"/>`};
+const artUrl=r=>`url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'><g opacity='.38'>${ART[r]}</g></svg>`)}")`;
 function stockHtml(P){return `<div class="stock"><span>${L('המלאי שלך','Your stock')}:</span>${RES.map(r=>`<span class="${r==='gold'&&P.broke?'red':''}">${ic(r,18)} ${fmt(P.res[r])}</span>`).join('')}</div>`;}
 function renderPanel(){const ui=G.ui,P=HUMAN();let h='';
   if(ui.type==='island'){const is=ui.is;const tn=L({wood:'אי עץ',stone:'אי אבן',iron:'אי ברזל'},{wood:'Wood island',stone:'Stone island',iron:'Iron island'})[is.res];
-    h+=`<div class="ttl">${is.name}</div>`+(is.owner===0?'':`<div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`);
+    h+=`<div class="ttl">${ic(is.res,22)} ${is.name}</div>`+(is.owner===0?'':`<div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`);
     const sel=G.sel?`<div class="small">${L('ספינה נבחרת','Selected ship')}: ${SHIPS[G.sel.type].he}</div>`:'';
     if(is.pirate){h+=`<div class="row">${L('ייצור','Production')}: ${ic(is.res)} +${is.prod} ${L('ליום','/day')}</div><p>${L('אפשר לכבוש את אי השודדים רק עם ספינת מלחמה. ספינת מלחמה נבנית במספנה של אי שיש בו מבצר.','The pirate island can only be taken by a Warrior. A Warrior is built at the shipyard of an island with a fortress.')}</p>`+
       btn('attack',L('⚔️ שלח ספינת מלחמה','⚔️ Send Warrior'),!shipsOf(0).some(s=>s.type==='warrior'))+sel;}
@@ -648,7 +664,8 @@ function renderPanel(){const ui=G.ui,P=HUMAN();let h='';
   else if(ui.type==='log')h+=`<div class="ttl">${L('יומן','Log')}</div>`+G.log.slice().reverse().map(l=>`<div class="small">${L('יום','Day')} ${l.d}: ${l.t}</div>`).join('');
   else if(ui.type==='quit')h+=`<div class="ttl">${L('יציאה','Exit')}</div><p style="text-align:center">${L('לצאת מהמשחק? המשחק הנוכחי לא יישמר.','Leave the game? The current game will not be saved.')}</p><div style="text-align:center">${btn('quitYes',L('כן, צא','Yes, exit'))}${btn('resume',L('לא','No'))}</div>`;
   if(ui.type==='island'||ui.type==='wreck'){const k=h.indexOf('</div>',h.indexOf('class="ttl"'))+6;h=h.slice(0,k)+stockHtml(P)+h.slice(k);}
-  $('panelBox').innerHTML=h;}
+  const pb=$('panelBox');pb.style.backgroundImage=ui.type==='island'?`${artUrl(ui.is.res)},linear-gradient(135deg,#f7ebcd,#e6cf9d)`:'';pb.style.backgroundRepeat='no-repeat';pb.style.backgroundPosition=LANG==='en'?'right 10px bottom 6px, 0 0':'left 10px bottom 6px, 0 0';pb.style.backgroundSize='min(300px,48%) auto, 100% 100%';pb.style.backgroundAttachment='scroll, local';
+  pb.innerHTML=h;}
 function marketHtml(mk,P){const price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const max=mk.mode==='sell'?Math.floor(P.res[mk.res]):Math.floor(P.res.gold/price);mk.amt=Math.min(mk.amt,max);
   return `<div class="tabs">${btn('mkmode',L('מכירה','Sell'),0,'sell').replace('class="btn"',`class="btn ${mk.mode==='sell'?'on':''}"`)}${btn('mkmode',L('קנייה','Buy'),0,'buy').replace('class="btn"',`class="btn ${mk.mode==='buy'?'on':''}"`)}</div>
   <div class="tabs">${['wood','stone','iron','steel'].map(r=>{const none=mk.mode==='sell'?P.res[r]<1:P.res.gold<BUY[r];return `<button class="btn mkr ${mk.res===r?'on':''}" data-act="mkres" data-v="${r}" ${none?'disabled':''}>${ic(r,20)} <span class="small">${L('מחיר','price')}</span> ${mk.mode==='sell'?SELL[r]:BUY[r]}${ic('gold',14)}<br><span class="small">${L('יש לך','you have')} ${fmt(P.res[r])}</span></button>`;}).join('')}</div>
@@ -710,7 +727,7 @@ if(LANG==='en')return `<div class="ttl">How to play</div><div class="help">
 <h4>🏠 Buildings</h4>${bt}
 <h4>⛵ Ships</h4>${st}
 <p>The Diplomat and the Warrior can only be built at the shipyard of an island with a fortress. Ships that collide push each other: a heavier, faster ship pushes harder.</p>
-<h4>☠️ Pirates</h4><p>Right after the first island is bought, the pirates set out to attack. They steal 60%–80% of all resources and destroy one building. 40 seconds after returning they sail again. A fortress sinks their ship. A Warrior that reaches the pirate island destroys them.</p>
+<h4>☠️ Pirates</h4><p>Right after the first island is bought, the pirates set out to attack. They steal 60%–80% of all resources and destroy one building. 40 seconds after returning they sail again. A fortress sinks their ship. A Warrior that reaches the pirate island destroys them: the island becomes yours and the Warrior is used up.</p>
 <h4>🤝 Diplomat</h4><p>The only way to buy an island another player owns. The price starts at 1,500 and rises by 10 each day and by half the gold cost of each building on the island. The diplomat is used up by the purchase. An island with a fortress is protected and cannot be bought.</p>
 <h4>💸 Out of gold</h4><p>When gold runs out, ships and production slow down by a third.</p>
 <h4>🪦 Ship wrecks</h4><p>There are 3 ship wrecks at the start of the game. Send a ship to one and you will find resources.</p></div>`;
@@ -723,7 +740,7 @@ return `<div class="ttl">הוראות</div><div class="help">
 <h4>🏠 מבנים</h4>${bt}
 <h4>⛵ ספינות</h4>${st}
 <p>דיפלומט וספינת מלחמה נבנים רק במספנה של אי שיש בו מבצר. ספינות שמתנגשות דוחפות זו את זו: ספינה כבדה ומהירה דוחפת חזק יותר.</p>
-<h4>☠️ שודדים</h4><p>מיד אחרי קניית האי הראשון השודדים יוצאים לתקוף. הם גונבים 60%–80% מכל המשאבים והורסים מבנה אחד. 40 שניות אחרי שחזרו הם יוצאים שוב. מבצר מטביע את ספינתם. ספינת מלחמה שמגיעה לאי השודדים משמידה אותם.</p>
+<h4>☠️ שודדים</h4><p>מיד אחרי קניית האי הראשון השודדים יוצאים לתקוף. הם גונבים 60%–80% מכל המשאבים והורסים מבנה אחד. 40 שניות אחרי שחזרו הם יוצאים שוב. מבצר מטביע את ספינתם. ספינת מלחמה שמגיעה לאי השודדים משמידה אותם: האי עובר אליך וספינת המלחמה נעלמת.</p>
 <h4>🤝 דיפלומט</h4><p>הדרך היחידה לקנות אי של שחקן אחר. המחיר מתחיל ב-1,500 ועולה ב-10 כל יום ובמחצית מעלות הכסף של כל מבנה באי. הדיפלומט נעלם אחרי הקנייה. אי שיש בו מבצר מוגן, ואי אפשר לקנות אותו.</p>
 <h4>💸 חוסר כסף</h4><p>כשהכסף נגמר, הספינות והייצור יורדים בשליש.</p>
 <h4>🪦 ספינות טרופות</h4><p>בתחילת המשחק יש 3 ספינות טרופות בים. שלח אליהן ספינה ותמצא משאבים.</p></div>`;}
