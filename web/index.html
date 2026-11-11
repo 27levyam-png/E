@@ -67,6 +67,10 @@ input[type=range]{width:100%;accent-color:#c8661c;height:28px}
 .help h4{margin:10px 0 3px}
 .help p,.help li{margin:2px 0;font-size:14px}
 table.t{border-collapse:collapse;font-size:13px;width:100%}
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:7px;margin-top:6px}
+.lvt{height:58px;border:2px solid #8a5a24;border-radius:10px;background:linear-gradient(#fff6dc,#e6cf98);font-family:inherit;color:#3b2a14;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:18px}
+.lvt span{font-size:15px}.lvt.g{background:linear-gradient(#fff3b0,#f2c94c)}.lvt.s{background:linear-gradient(#f4f4f4,#cfd3d8)}.lvt[disabled]{opacity:.45}
+#goal{cursor:pointer}
 .stock{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 12px;background:rgba(138,90,36,.12);border:1px solid #b89458;border-radius:9px;padding:4px 8px;margin:0 0 6px;font-weight:bold;font-size:15px}
 .stock span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .btn.mkr{line-height:1.25;padding:5px 9px}
@@ -131,7 +135,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.7';
+const VERSION='1.0.8';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -228,16 +232,72 @@ function sfx(kind){
   else if(kind==='lose'){[392,349.2,311.1,261.6].forEach((f,i)=>tone(f,t+i*.3,.9,'triangle',.1));}
 }
 
+/* ================= שלבים ================= */
+const LV=[];
+function lv(o){LV.push(Object.assign({isl:12,pl:1,pir:false,hid:false,diff:1,start:null,aiBonus:1,race:false,good:30,pass:50,seed:LV.length*7919+101},o));}
+lv({isl:10,good:10,pass:20,goals:{islands:1,market:1}});
+lv({isl:12,good:25,pass:45,goals:{islands:1,market:1,shipyard:1,cog:1}});
+lv({isl:12,good:100,pass:160,goals:{islands:1,miner:1,gold:1200}});
+lv({isl:12,good:25,pass:45,start:{gold:1300,steel:50},goals:{islands:2,shipyard:1}});
+lv({isl:14,good:120,pass:200,start:{iron:120},goals:{islands:2,foundry:1,steel:40}});
+lv({isl:14,good:60,pass:100,pir:true,start:{gold:1500,wood:900,stone:900,steel:100},goals:{islands:2,fortress:1}});
+lv({isl:16,good:120,pass:190,pl:2,diff:0,goals:{islands:3,market:2}});
+lv({isl:16,good:250,pass:380,pl:2,diff:0,pir:true,goals:{islands:3,pirates:1}});
+lv({isl:18,good:220,pass:330,pl:2,diff:1,pir:true,goals:{islands:4,fortress:2}});
+lv({isl:20,good:200,pass:300,pl:3,diff:1,pir:true,hid:true,goals:{islands:4,shipyard:2,fortress:2}});
+for(let t=1;t<=20;t++){const g={islands:4+Math.floor(t/3),fortress:2+Math.floor(t/4),market:2+Math.floor(t/5)};
+  if(t%2===0)g.miner=1+Math.floor(t/5);if(t%3===0)g.foundry=1+Math.floor(t/8);if(t%4===1)g.shipyard=2;if(t%5===0)g.pirates=1;if(t%6===3)g.steel=100+t*5;
+  lv({isl:Math.min(18+t*2,50),pl:Math.min(2+Math.floor(t/5),5),diff:t<6?1:t<14?2:3,pir:true,hid:t%3!==1,aiBonus:1+t*.02,race:t>=8,good:150+t*3+(g.pirates?30:0),pass:Math.round((150+t*3+(g.pirates?30:0))*1.5),goals:g});}
+const DIFF_HE=()=>[L('קל','Easy'),L('רגיל','Normal'),L('קשה','Hard'),L('מומחה','Expert')];
+let PROG={};try{PROG=JSON.parse(localStorage.getItem('gi_levels')||'{}');}catch(e){}
+const saveProg=()=>{try{localStorage.setItem('gi_levels',JSON.stringify(PROG));}catch(e){}};
+const lvUnlocked=n=>n===0||(PROG[n-1]||0)>=1;
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const GKEYS=['islands','market','miner','foundry','shipyard','fortress','cog','pinasse','gold','steel','pirates'];
+function goalLabel(k){if(BLD[k])return BLD[k].he;if(SHIPS[k])return SHIPS[k].he;
+  return {islands:L('איים בבעלותך','Islands owned'),gold:L('כסף במלאי','Gold in stock'),steel:L('פלדה במלאי','Steel in stock'),pirates:L('השמדת השודדים','Destroy the pirates')}[k];}
+const GICON={islands:'🏝',market:'⚖️',miner:'⛏️',foundry:'🔥',shipyard:'⚓',fortress:'🏰',cog:'⛵',pinasse:'🚢',pirates:'☠️'};
+const gIcon=k=>k==='gold'||k==='steel'?ic(k,18):GICON[k];
+function goalHave(k,p){if(k==='islands')return ownedBy(p).length;if(BLD[k])return ownedBy(p).filter(i=>i.b[k]).length;if(SHIPS[k])return shipsOf(p).filter(s=>s.type===k).length;
+  if(k==='gold'||k==='steel')return Math.floor(G.players[p].res[k]);if(k==='pirates')return G.pir.dead&&G.pir.by===p?1:0;return 0;}
+function goalList(gl,p){return GKEYS.filter(k=>gl[k]).map(k=>{const h=goalHave(k,p);return{k,have:Math.min(h,gl[k]),need:gl[k],done:h>=gl[k]};});}
+function goalsRows(gl,p){return goalList(gl,p).map(g=>`<div class="card" style="padding:4px 9px"><div class="grow"><b>${gIcon(g.k)} ${goalLabel(g.k)}</b></div><b class="${g.done?'green':''}">${g.done?'✓ ':''}${g.k==='pirates'?(g.done?L('בוצע','done'):L('עדיין לא','not yet')):`<span dir="ltr">${g.have} / ${g.need}</span>`}</b></div>`).join('');}
+function checkLevel(){if(!G||G.over||G.level==null)return;const d=LV[G.level];
+  if(goalList(d.goals,0).every(g=>g.done)){levelEnd(true);return;}
+  if(G.day>d.pass){levelEnd(false,'time');return;}
+  if(d.race)for(const P of G.players){if(P.human||!P.alive)continue;const gl={islands:d.goals.islands,fortress:d.goals.fortress||0};if(goalList(gl,P.id).every(g=>g.done)){levelEnd(false,'race',P);return;}}}
+function levelEnd(win,why,P){G.over=true;const n=G.level,d=LV[n];const medal=win?(G.day<=d.good?2:1):0;
+  if(win){PROG[n]=Math.max(PROG[n]||0,medal);saveProg();sfx('win');}else sfx('lose');
+  const mtxt=medal===2?L('🥇 הישג טוב!','🥇 Great result!'):L('🥈 עברת את השלב','🥈 Level passed');
+  const body=win?`<p style="font-size:20px"><b>${mtxt}</b></p><p>${L(`השלמת את כל היעדים תוך <b>${G.day}</b> ימים.`,`You completed all goals in <b>${G.day}</b> days.`)}</p><p class="small">${L(`🥇 עד יום ${d.good} · 🥈 עד יום ${d.pass}`,`🥇 by day ${d.good} · 🥈 by day ${d.pass}`)}</p>${medal===1?`<p class="small">${L('נסה שוב כדי להשיג את ההישג הטוב.','Try again to get the great result.')}</p>`:''}`
+    :`<p>${why==='time'?L(`עברו ${d.pass} ימים והיעדים לא הושלמו.`,`${d.pass} days passed and the goals were not completed.`):why==='race'?L(`${P.name} השיג את היעד לפניך.`,`${P.name} reached the goal before you.`):L('הפסדת את כל האיים שלך.','You lost all your islands.')}</p>`;
+  const btns=[];if(win&&n+1<LV.length)btns.push([L('▶ לשלב הבא','▶ Next level'),()=>{endGame();showBrief(n+1);}]);
+  btns.push([L('🔄 שחק שוב','🔄 Play again'),()=>{endGame();startLevel(n);}],[L('🗺️ שלבים','🗺️ Levels'),()=>{endGame();showLevels();}]);
+  modal(win?L(`שלב ${n+1} הושלם!`,`Level ${n+1} complete!`):L(`שלב ${n+1} – לא הצלחת`,`Level ${n+1} – failed`),body+`<div style="text-align:start">${goalsRows(d.goals,0)}</div>`,btns);}
+function startLevel(n){const d=LV[n];newGame({islands:d.isl,players:d.pl,pirates:d.pir,hidden:d.hid,diff:d.diff,level:n,start:d.start,aiBonus:d.aiBonus,seed:d.seed});
+  show(null);$('hud').classList.remove('hidden');updHud();toast(L('המשחק מושהה. לחץ ▶ כשתהיה מוכן. הקש על שורת היעדים למעלה כדי לראות אותם','The game is paused. Press ▶ when ready. Tap the goals bar at the top to see them'),6000);}
+function showLevels(){let h=`<div class="ttl">${L('שלבים','Levels')}</div><div class="lvgrid">`;
+  LV.forEach((d,i)=>{const u=lvUnlocked(i),m=PROG[i]||0;h+=`<button class="lvt ${m===2?'g':m===1?'s':''}" data-act="lvbrief" data-v="${i}" ${u?'':'disabled'}><b>${i+1}</b><span>${u?(m===2?'🥇':m===1?'🥈':'·'):'🔒'}</span></button>`;});
+  $('infoBox').innerHTML=h+'</div>';$('infoBox').style.backgroundImage='';document.querySelector('#info .close').dataset.go='mainMenu';show('info');}
+function showBrief(n){const d=LV[n];let h=`<div class="ttl">${L('שלב','Level')} ${n+1}</div><div class="small" style="text-align:center">${L('השלם את כל היעדים:','Complete all the goals:')}</div>`;
+  h+=GKEYS.filter(k=>d.goals[k]).map(k=>`<div class="card" style="padding:4px 9px"><div class="grow"><b>${gIcon(k)} ${goalLabel(k)}</b></div><b>${k==='pirates'?'✔':d.goals[k]}</b></div>`).join('');
+  h+=`<div class="row" style="justify-content:center;font-size:16px"><b>🥇 ${L('הישג טוב: עד יום','Great: by day')} ${d.good}</b> · <b>🥈 ${L('עובר: עד יום','Pass: by day')} ${d.pass}</b></div>`;
+  h+=`<div class="small" style="text-align:center">🏝 ${d.isl} ${L('איים','islands')} · ${d.pl>1?`⚔️ ${d.pl-1} ${L('יריבים','opponents')} (${DIFF_HE()[d.diff]})`:L('בלי יריבים','no opponents')}${d.pir?' · ☠️ '+L('שודדים','pirates'):''}${d.hid?' · 🌫 '+L('איים נסתרים','hidden islands'):''}${d.start?' · 🎁 '+L('משאבי פתיחה נוספים','extra starting resources'):''}</div>`;
+  if(d.race)h+=`<p class="small red" style="text-align:center">${L(`מרוץ: אם יריב יחזיק ${d.goals.islands} איים${d.goals.fortress?` ו-${d.goals.fortress} מבצרים`:''} לפניך – הפסדת.`,`Race: if an opponent holds ${d.goals.islands} islands${d.goals.fortress?` and ${d.goals.fortress} fortresses`:''} before you – you lose.`)}</p>`;
+  h+=`<button class="btn big" data-act="lvgo" data-v="${n}">⚓ ${L('התחל','Start')}</button>`;
+  $('infoBox').innerHTML=h;document.querySelector('#info .close').dataset.go='levels';show('info');}
+
 /* ================= מצב משחק ================= */
 let G=null; const cam={x:0,y:0,z:1}; let SW=0,SH=0,DPR=1; const cv=$('c'),ctx=cv.getContext('2d');
 const HUMAN=()=>G.players[0];
 const ownedBy=p=>G.islands.filter(i=>i.owner===p);
 const winTarget=()=>Math.min(10,Math.ceil(G.islands.length/2));
 
-function newGame(opt){
+function newGame(opt){const _r=Math.random;if(opt.seed!=null)Math.random=mulberry(opt.seed);try{newGame0(opt);}finally{Math.random=_r;}}
+function newGame0(opt){
   const N=opt.islands, area=N*230000, H=Math.sqrt(area/1.6), W=H*1.6;
   G={W,H,time:0,day:1,dayT:0,speed:1,paused:true,islands:[],ships:[],wrecks:[],players:[],order:[],log:[],over:false,opt,nid:1,fx:[],sel:null,ui:null,visT:0,
-     pir:{island:null,ship:null,k:0,fails:{},cd:-1,started:false,dead:!opt.pirates,target:-1},waves:[]};
+     pir:{island:null,ship:null,k:0,fails:{},cd:-1,started:false,dead:!opt.pirates,target:-1},waves:[],level:opt.level==null?null:opt.level,bot:false};
   for(let i=0;i<opt.players;i++)G.players.push({id:i,human:i===0,get name(){return this.human?L('אתה','You'):L('מחשב ','Computer ')+COLORS[this.id][LANG==='en'?2:0]},color:COLORS[i][1],
     res:{gold:500,wood:600,stone:500,iron:0,steel:0},broke:false,alive:true,had:false,raided:0,aiT:rnd(.5,2)});
   // מיקום איים
@@ -258,12 +318,13 @@ function newGame(opt){
     irons.sort((a,b)=>dist(a,C)-dist(b,C));
     const pi=irons[Math.floor(Math.random()*Math.min(2,irons.length))]||irons[0];if(pi){pi.pirate=true;G.pir.island=pi;}else G.pir.dead=true;}
   G.players.forEach((P,i)=>{const s=spawnShip('pinasse',i,starts[i].x,starts[i].y);s.a=Math.atan2(H/2-s.y,W/2-s.x);});
+  G.players.forEach(P=>{if(P.human){if(opt.start)Object.assign(P.res,opt.start);}else if(opt.aiBonus&&opt.aiBonus!==1)for(const r of RES)P.res[r]=Math.round(P.res[r]*opt.aiBonus);});
   for(let i=0;i<3;i++){let p,k=0;do{p={x:rnd(80,W-80),y:rnd(80,H-80)};k++;}while(k<200&&(G.islands.some(is=>dist(is,p)<is.r+70)||starts.some(s=>dist(s,p)<250)));
     G.wrecks.push({id:G.nid++,x:p.x,y:p.y,a:rnd(0,6.28),loot:{gold:rint(150,500),[pick(['wood','stone'])]:rint(50,150)},disc:!opt.hidden});}
   for(let i=0;i<Math.floor(W*H/9000);i++)G.waves.push({x:rnd(0,W),y:rnd(0,H),p:rnd(0,6.28),s:rnd(.6,1.4)});
   G.islands.forEach(makeIslandImg);
   const hs=G.ships[0];cam.x=hs.x;cam.y=hs.y;cam.z=1;clampCam();updVision();
-  log(L(`המשחק התחיל: ${N} איים, ${opt.players} שחקנים. היעד: ${winTarget()} איים עם מבצר.`,`Game started: ${N} islands, ${opt.players} players. Goal: ${winTarget()} islands with a fortress.`));
+  if(opt.level!=null)log(L(`שלב ${opt.level+1} התחיל`,`Level ${opt.level+1} started`));else log(L(`המשחק התחיל: ${N} איים, ${opt.players} שחקנים. היעד: ${winTarget()} איים עם מבצר.`,`Game started: ${N} islands, ${opt.players} players. Goal: ${winTarget()} islands with a fortress.`));
 }
 function spawnShip(type,owner,x,y){const s={id:G.nid++,type,owner,x,y,vx:0,vy:0,a:rnd(0,6.28),order:null,dest:null,cargo:null,sink:0,wait:0};G.ships.push(s);return s;}
 const shipsOf=p=>G.ships.filter(s=>s.owner===p&&!s.sink);
@@ -314,7 +375,7 @@ function transfer(is,to,how){const from=is.owner;is.owner=to;is.since=G.day;if(i
   firstIsland(to);checkElim(from);}
 function checkElim(p){const P=G.players[p];if(!P.alive||!P.had)return;if(ownedBy(p).length)return;
   P.alive=false;G.ships.forEach(s=>{if(s.owner===p&&!s.sink)s.sink=.01;});log(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));
-  if(P.human)gameOver(false);else{toast(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));if(G.players.every(q=>q.human||!q.alive))gameOver(true);}}
+  if(P.human){if(G.level!=null)levelEnd(false,'elim');else gameOver(false);}else{if(G.level!=null){toast(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));return;}toast(L(`${P.name} הודח מהמשחק`,`${P.name} is out of the game`));if(G.players.every(q=>q.human||!q.alive))gameOver(true);}}
 function firstIsland(p){const P=G.players[p];if(P.had)return;P.had=true;G.order.push(p);
   if(G.pir.island&&!G.pir.started&&!G.pir.dead){G.pir.started=true;pirLaunch();}}
 
@@ -365,7 +426,7 @@ function dayTick(){
       if(is.b.foundry){const c=Math.min(8,P.res.iron);const st=Math.floor(c/2);P.res.iron-=st*2;P.res.steel+=st;}}
     else if(!is.pirate)is.storage=Math.min(is.storage+p,999);}
   G.players.forEach((P,i)=>{if(!P.alive)return;P.res.gold+=gd[i];if(P.res.gold<=0){P.res.gold=0;if(!P.broke&&P.human&&P.had)toast(L('נגמר הכסף! הספינות והייצור איטיים בשליש','Out of gold! Ships and production are a third slower'));P.broke=P.had&&true;}else P.broke=false;});
-  const tg=winTarget();for(const P of G.players){if(!P.alive)continue;const f=ownedBy(P.id).filter(i=>i.b.fortress).length;if(f>=tg){gameOver(P.human,P);return;}}
+  if(G.level!=null)return;const tg=winTarget();for(const P of G.players){if(!P.alive)continue;const f=ownedBy(P.id).filter(i=>i.b.fortress).length;if(f>=tg){gameOver(P.human,P);return;}}
 }
 function islandDaily(is){const P=G.players[is.owner];let p=is.prod*(is.b.miner?2:1);if(P&&P.broke)p=Math.round(p*2/3);let g=-EMPTY_UPKEEP;for(const k of BKEYS)if(is.b[k])g+=BLD[k].daily;return{p,g};}
 function statsHtml(){const rows=G.players.map(P=>({P,isl:ownedBy(P.id).length,f:ownedBy(P.id).filter(i=>i.b.fortress).length,sh:shipsOf(P.id).length}));
@@ -411,12 +472,13 @@ function collide(){const L=G.ships;for(let i=0;i<L.length;i++){const a=L[i];if(a
   const fa=1-.25*mb/sum,fb=1-.25*ma/sum;a.vx*=fa;a.vy*=fa;b.vx*=fb;b.vy*=fb;}}}
 
 /* ================= מחשב ================= */
-function aiThink(P){
-  const me=P.id,mine=ownedBy(me),ships=shipsOf(me),R=P.res,diff=G.opt.diff;
+function aiThink(P,gl){
+  const me=P.id,mine=ownedBy(me),ships=shipsOf(me),R=P.res,diff=gl?2:G.opt.diff;
   const cnt=k=>ships.filter(s=>s.type===k).length+mine.filter(i=>i.sbuild&&i.sbuild.key===k).length;
-  const reserve=mine.length<winTarget()?SETTLE:{};
+  const reserve=mine.length<(gl?gl.islands||0:winTarget())?SETTLE:{};
   // מכירת עודפים
   if(mine.some(i=>i.b.market)){for(const r of ['wood','stone','iron']){let ex=0;if(R.gold<400)ex=Math.floor((R[r]-250)*.5);else if(R[r]>1200)ex=R[r]-900;if(ex>0){R[r]-=ex;R.gold+=ex*SELL[r];}}
+    for(const r of ['wood','stone']){if(R[r]<350&&R.gold>700){const n=Math.min(350-R[r],Math.floor((R.gold-500)/BUY[r]));if(n>0){R[r]+=n;R.gold-=n*BUY[r];}}}
     if(R.gold>2200&&R.stone<500&&mine.some(i=>!i.b.fortress)){const n=Math.min(500-R.stone,Math.floor((R.gold-1700)/BUY.stone));if(n>0){R.stone+=n;R.gold-=n*BUY.stone;}}
     if(R.gold>3000&&R.steel<100){const n=Math.min(100-R.steel,Math.floor((R.gold-2400)/BUY.steel));if(n>0){R.steel+=n;R.gold-=n*BUY.steel;}}}
   // יישוב
@@ -430,6 +492,8 @@ function aiThink(P){
   // מבנים
   if(R.gold>=1300&&R.stone>=500&&R.steel>=100&&R.wood>=200){const c=mine.filter(i=>!i.b.fortress&&!i.build).sort((a,b)=>b.b.shipyard-a.b.shipyard);if(c[0])startBuild(P,c[0],'fortress');}
   const net=mine.reduce((a,i)=>a+islandDaily(i).g,0);
+  if(gl)for(const k of BKEYS){if(!gl[k]||mine.filter(i=>i.b[k]).length>=gl[k])continue;if(mine.some(i=>i.build&&i.build.key===k))continue;
+    const is=mine.find(i=>!i.b[k]&&!i.build&&(k!=='fortress'||true));if(is&&afford(P,BLD[k].cost)){startBuild(P,is,k);break;}}
   for(const is of mine){if(is.build)continue;let w=null;
     if(!is.b.market&&mine.filter(i=>i.b.market).length<Math.max(1,Math.ceil(mine.length/2)))w='market';
     else if(!is.b.shipyard&&(!mine.some(i=>i.b.shipyard)||(mine.length>=5&&mine.filter(i=>i.b.shipyard).length<2)))w='shipyard';
@@ -437,20 +501,22 @@ function aiThink(P){
     else if(!is.b.miner&&(net>=10||R.gold>900))w='miner';
     if(w&&afford(P,addC(BLD[w].cost,w==='market'?{}:reserve))){startBuild(P,is,w);break;}}
   // ספינות
-  for(const is of mine.filter(i=>i.b.shipyard&&!i.sbuild)){let w=null;
-    if(is.b.fortress&&!G.pir.dead&&P.raided>=2&&cnt('warrior')<1)w='warrior';
-    else if(is.b.fortress&&cnt('diplomat')<(diff>=1?1:0)+(diff===2&&mine.length>4?1:0)&&R.gold>2600)w='diplomat';
-    else if(cnt('pinasse')<1+Math.floor(mine.length/4)&&R.steel>=50)w='pinasse';
-    else if(cnt('cog')<Math.min(2+mine.length,7))w='cog';
-    if(w&&afford(P,addC(SHIPS[w].cost,w==='warrior'?{}:reserve)))startShip(P,is,w);}
+  for(const is of mine.filter(i=>i.b.shipyard&&!i.sbuild)){const W=[];
+    if(is.b.fortress&&!G.pir.dead&&(P.raided>=2||(gl&&gl.pirates))&&cnt('warrior')<1)W.push(['warrior',0]);
+    if(gl&&gl.pinasse&&cnt('pinasse')<gl.pinasse)W.push(['pinasse',0]);
+    if(gl&&gl.cog&&cnt('cog')<gl.cog)W.push(['cog',0]);
+    if(!gl&&is.b.fortress&&cnt('diplomat')<(diff>=1?1:0)+(diff>=2&&mine.length>4?1:0)+(diff>=3?1:0)&&R.gold>(diff>=3?2000:2600))W.push(['diplomat',1]);
+    if(cnt('pinasse')<1+Math.floor(mine.length/4)&&R.steel>=50)W.push(['pinasse',1]);
+    if(cnt('cog')<Math.min(2+mine.length,7))W.push(['cog',1]);
+    for(const [w,res] of W){if(afford(P,res?addC(SHIPS[w].cost,w==='pinasse'?{}:reserve):SHIPS[w].cost)){startShip(P,is,w);break;}}}
   // איסוף
   if(mine.length){const srcs=G.islands.filter(i=>i.owner<0&&!i.pirate);
     for(const s of ships.filter(s=>!s.order&&(s.type==='cog'||(s.type==='pinasse'&&!afford(P,SETTLE))))){
       if(s.cargo){const h=nearestOwn(s,me);if(h){order(s,'move',h);continue;}}
-      let best=null,bv=-1e9;for(const i of srcs){const n=G.ships.filter(q=>q.order&&q.order.src===i).length;const v=i.storage+i.prod*6-dist(s,i)*.15-n*160+(i.res==='iron'&&!mine.some(m=>m.res==='iron')?300:0);if(v>bv){bv=v;best=i;}}
+      let best=null,bv=-1e9;for(const i of srcs){const n=G.ships.filter(q=>q.order&&q.order.src===i).length;const v=i.storage+i.prod*6-dist(s,i)*.15-n*160+(i.res==='iron'&&!mine.some(m=>m.res==='iron')?300:0)+Math.max(0,400-R[i.res])*.8;if(v>bv){bv=v;best=i;}}
       if(best)sendCollect(s,best);}}
   // דיפלומט ומלחמה
-  for(const s of ships.filter(s=>!s.order&&s.type==='diplomat')){const c=G.islands.filter(i=>i.owner>=0&&i.owner!==me&&!i.b.fortress&&islandValue(i)<=R.gold-(diff===2?150:400));
+  for(const s of ships.filter(s=>!s.order&&s.type==='diplomat')){const c=G.islands.filter(i=>i.owner>=0&&i.owner!==me&&!i.b.fortress&&islandValue(i)<=R.gold-(diff>=3?50:diff===2?150:400));
     if(c.length){c.sort((a,b)=>islandValue(a)+dist(s,a)-islandValue(b)-dist(s,b));order(s,'bribe',c[0]);}}
   for(const s of ships.filter(s=>!s.order&&s.type==='warrior'))if(!G.pir.dead)order(s,'attack',G.pir.island);
 }
@@ -464,8 +530,9 @@ function update(dt){
   G.ships=G.ships.filter(s=>!s.dead&&s.sink<2.2);
   if(G.sel&&!G.ships.includes(G.sel)){G.sel=null;updSel();}
   const pr=G.pir;if(pr.started&&!pr.dead&&!pr.ship&&pr.cd>=0){pr.cd-=dt;if(pr.cd<=0){pr.cd=-1;pirLaunch();}}
-  const iv=[4,2,1][G.opt.diff];for(const P of G.players){if(P.human||!P.alive)continue;P.aiT-=dt;if(P.aiT<=0){P.aiT=iv;aiThink(P);}}
-  G.visT-=dt;if(G.visT<=0){G.visT=.5;updVision();}
+  const iv=[4,2,1,.6][G.opt.diff];if(G.bot&&G.level!=null){const H=HUMAN();H.aiT-=dt;if(H.aiT<=0){H.aiT=1;aiThink(H,LV[G.level].goals);}}
+  for(const P of G.players){if(P.human||!P.alive)continue;P.aiT-=dt;if(P.aiT<=0){P.aiT=iv;aiThink(P);}}
+  G.visT-=dt;if(G.visT<=0){G.visT=.5;updVision();checkLevel();}
 }
 function updVision(){if(!G.opt.hidden)return;const src=[...shipsOf(0),...ownedBy(0)];
   for(const is of G.islands)if(!is.disc&&src.some(s=>dist(s,is)<420))is.disc=true;
@@ -605,11 +672,12 @@ function updSel(){const b=$('selbar');const s=G&&G.sel;if(!s){b.classList.add('h
   $('sStop').onclick=()=>{s.order=null;s.dest=null;updSel();};$('sX').onclick=()=>{G.sel=null;updSel();};}
 function updHud(){const P=HUMAN();$('dayTxt').textContent=L('יום ','Day ')+G.day;
   $('resbar').innerHTML=RES.map(r=>`<div class="rs ${r==='gold'&&P.broke?'broke':''}">${ic(r,24)}<span>${fmt(P.res[r])}</span></div>`).join('');
-  const f=ownedBy(0).filter(i=>i.b.fortress).length;$('goal').textContent=L(`🏰 איים עם מבצר: ${f} / ${winTarget()}   ·   🏝 איים: ${ownedBy(0).length}`,`🏰 Islands with fortress: ${f} / ${winTarget()}   ·   🏝 Islands: ${ownedBy(0).length}`);
+  const f=ownedBy(0).filter(i=>i.b.fortress).length;if(G.level!=null){const d=LV[G.level],gl=goalList(d.goals,0),dn=gl.filter(g=>g.done).length;$('goal').textContent=L(`שלב ${G.level+1} · 🎯 יעדים ${dn}/${gl.length} · ${G.day<=d.good?'🥇':'🥈'} יום ${G.day}/${G.day<=d.good?d.good:d.pass}`,`Level ${G.level+1} · 🎯 Goals ${dn}/${gl.length} · ${G.day<=d.good?'🥇':'🥈'} day ${G.day}/${G.day<=d.good?d.good:d.pass}`);}
+  else $('goal').textContent=L(`🏰 איים עם מבצר: ${f} / ${winTarget()}   ·   🏝 איים: ${ownedBy(0).length}`,`🏰 Islands with fortress: ${f} / ${winTarget()}   ·   🏝 Islands: ${ownedBy(0).length}`);
   $('bPause').classList.toggle('on',G.paused);$('bPlay').classList.toggle('on',!G.paused&&G.speed===1);$('bPlay').classList.toggle('pulse',G.paused&&G.time===0);$('bFast').classList.toggle('on',!G.paused&&G.speed>1);
   if(G.sel)updSel();}
 $('bPause').onclick=()=>{G.paused=true;updHud();};$('bPlay').onclick=()=>{G.paused=false;G.speed=1;updHud();};$('bFast').onclick=()=>{G.paused=false;G.speed=3;updHud();};
-$('bMenu').onclick=()=>openPanel({type:'menu'});$('bHelp').onclick=()=>openPanel({type:'help'});$('bLog').onclick=()=>openPanel({type:'log'});
+$('bMenu').onclick=()=>openPanel({type:'menu'});$('goal').onclick=()=>{if(G&&G.level!=null)openPanel({type:'goals'});};$('bHelp').onclick=()=>openPanel({type:'help'});$('bLog').onclick=()=>openPanel({type:'log'});
 
 function chooseShip(types,target){const s=G.sel;if(s&&s.owner===0&&types.includes(s.type))return s;
   const c=shipsOf(0).filter(q=>types.includes(q.type));if(!c.length)return null;
@@ -658,13 +726,15 @@ function renderPanel(){const ui=G.ui,P=HUMAN();let h='';
             h+=`<div class="card"><div class="grow"><b>${S.he}</b><div class="small">${S.desc} · ${L('מטען','cargo')} ${S.cargo} · ${L('מהירות','speed')} ${S.speed} ${L('קשר','knots')} · ${S.time} ${L("שנ'",'s')}</div><div>${costHtml(S.cost,P)}</div>${need?`<div class="small red">${L('דורש מבצר באי!','Requires a fortress!')}</div>`:''}</div>${btn('mkship',L('בנה','Build'),!!is.sbuild||need||!afford(P,S.cost),k)}</div>`;}}}}}
   else if(ui.type==='wreck'){h+=`<div class="ttl">${L('ספינה טרופה','Ship wreck')}</div><p>${L('בוא נראה מה נשאר שם.','Let us see what was left there.')}</p>`+btn('wreck',L('⛵ שלח ספינה לבדוק','⛵ Send a ship'),!shipsOf(0).length);}
   else if(ui.type==='menu'){h+=`<div class="ttl">${L('תפריט','Menu')}</div>`+[['resume',L('▶ המשך','▶ Continue')],['sound',L('⚙️ הגדרות','⚙️ Settings')],['help',L('❓ הוראות','❓ How to play')],['about',L('ℹ️ אודות','ℹ️ About')],['quit',L('🚪 יציאה לתפריט הראשי','🚪 Exit to main menu')]].map(([a,l])=>`<button class="btn big" data-act="${a}">${l}</button>`).join('');}
+  else if(ui.type==='goals'){const d=LV[G.level];h+=`<div class="ttl">${L('יעדי שלב','Level')} ${G.level+1}</div>`+goalsRows(d.goals,0)+`<div class="row" style="justify-content:center"><b>🥇 ${L('עד יום','by day')} ${d.good}</b> · <b>🥈 ${L('עד יום','by day')} ${d.pass}</b> · ${L('היום','today')}: ${G.day}</div>`+(d.race?`<p class="small red" style="text-align:center">${L('מרוץ: יריב שמשיג את יעד האיים והמבצרים לפניך מנצח.','Race: an opponent who reaches the islands and fortress goal before you wins.')}</p>`:'');}
   else if(ui.type==='help')h+=helpHtml();
   else if(ui.type==='about')h+=aboutHtml();
   else if(ui.type==='sound')h+=soundHtml();
   else if(ui.type==='log')h+=`<div class="ttl">${L('יומן','Log')}</div>`+G.log.slice().reverse().map(l=>`<div class="small">${L('יום','Day')} ${l.d}: ${l.t}</div>`).join('');
   else if(ui.type==='quit')h+=`<div class="ttl">${L('יציאה','Exit')}</div><p style="text-align:center">${L('לצאת מהמשחק? המשחק הנוכחי לא יישמר.','Leave the game? The current game will not be saved.')}</p><div style="text-align:center">${btn('quitYes',L('כן, צא','Yes, exit'))}${btn('resume',L('לא','No'))}</div>`;
   if(ui.type==='island'||ui.type==='wreck'){const k=h.indexOf('</div>',h.indexOf('class="ttl"'))+6;h=h.slice(0,k)+stockHtml(P)+h.slice(k);}
-  const pb=$('panelBox');pb.style.backgroundImage=ui.type==='island'?`${artUrl(ui.is.res)},linear-gradient(135deg,#f7ebcd,#e6cf9d)`:'';pb.style.backgroundRepeat='no-repeat';pb.style.backgroundPosition=LANG==='en'?'right 10px bottom 6px, 0 0':'left 10px bottom 6px, 0 0';pb.style.backgroundSize='min(300px,48%) auto, 100% 100%';pb.style.backgroundAttachment='scroll, local';
+  const pb=$('panelBox');if(ui.type==='island'){pb.style.backgroundImage=`${artUrl(ui.is.res)},linear-gradient(135deg,#f7ebcd,#e6cf9d)`;pb.style.backgroundRepeat='no-repeat';pb.style.backgroundPosition=LANG==='en'?'right 10px bottom 6px, 0 0':'left 10px bottom 6px, 0 0';pb.style.backgroundSize='min(300px,48%) auto, 100% 100%';pb.style.backgroundAttachment='scroll, local';}
+  else{pb.style.backgroundImage=pb.style.backgroundRepeat=pb.style.backgroundPosition=pb.style.backgroundSize=pb.style.backgroundAttachment='';}
   pb.innerHTML=h;}
 function marketHtml(mk,P){const price=mk.mode==='sell'?SELL[mk.res]:BUY[mk.res];const max=mk.mode==='sell'?Math.floor(P.res[mk.res]):Math.floor(P.res.gold/price);mk.amt=Math.min(mk.amt,max);
   return `<div class="tabs">${btn('mkmode',L('מכירה','Sell'),0,'sell').replace('class="btn"',`class="btn ${mk.mode==='sell'?'on':''}"`)}${btn('mkmode',L('קנייה','Buy'),0,'buy').replace('class="btn"',`class="btn ${mk.mode==='buy'?'on':''}"`)}</div>
@@ -746,12 +816,12 @@ return `<div class="ttl">הוראות</div><div class="help">
 <h4>🪦 ספינות טרופות</h4><p>בתחילת המשחק יש 3 ספינות טרופות בים. שלח אליהן ספינה ותמצא משאבים.</p></div>`;}
 
 /* ================= מסכים ================= */
-function show(id){['mainMenu','setup','info'].forEach(x=>$(x).classList.toggle('hidden',x!==id));}
-function showInfo(type){$('infoBox').innerHTML=(type==='help'?helpHtml():type==='about'?aboutHtml():soundHtml());show('info');}
+function show(id){if(id==='levels'){showLevels();return;}['mainMenu','setup','info'].forEach(x=>$(x).classList.toggle('hidden',x!==id));}
+function showInfo(type){document.querySelector('#info .close').dataset.go='mainMenu';$('infoBox').innerHTML=(type==='help'?helpHtml():type==='about'?aboutHtml():soundHtml());show('info');}
 document.addEventListener('click',e=>{if(e.target.closest('.close'))return;const el=e.target.closest('[data-go]');if(!el)return;audioInit();sfx('tap');const g=el.dataset.go;
   if(g==='help'||g==='about'||g==='sound')showInfo(g);else show(g);});
-$('infoBox').addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;if(el.dataset.act==='lang'){setLang(el.dataset.v);showInfo('sound');return;}if(el.dataset.act!=='snd')return;SND.cfg[el.dataset.v]=!SND.cfg[el.dataset.v];saveSnd();if(el.dataset.v==='music')setMusic();showInfo('sound');});
-$('bLevels').onclick=()=>{audioInit();toast2(L('השלבים יגיעו בגרסה הבאה','Levels are coming in a later version'));};
+$('infoBox').addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;if(el.dataset.act==='lvbrief'){sfx('tap');showBrief(+el.dataset.v);return;}if(el.dataset.act==='lvgo'){audioInit();sfx('tap');startLevel(+el.dataset.v);return;}if(el.dataset.act==='lang'){setLang(el.dataset.v);showInfo('sound');return;}if(el.dataset.act!=='snd')return;SND.cfg[el.dataset.v]=!SND.cfg[el.dataset.v];saveSnd();if(el.dataset.v==='music')setMusic();showInfo('sound');});
+$('bLevels').onclick=()=>{audioInit();sfx('tap');showLevels();};
 function toast2(t){const e=$('toast');$('hud').classList.remove('hidden');e.textContent=t;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>{e.style.opacity=0;if(!G)$('hud').classList.add('hidden');},2200);}
 $('sIsl').oninput=e=>$('vIsl').textContent=e.target.value;$('sPl').oninput=e=>$('vPl').textContent=e.target.value;
 let diff=1;$('diffBtns').onclick=e=>{const b=e.target.closest('[data-diff]');if(!b)return;diff=+b.dataset.diff;$('diffBtns').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));};
@@ -765,6 +835,7 @@ window.handleBack=function(){
   if(!$('panel').classList.contains('hidden')){closePanel();return true;}
   if(G){openPanel({type:'menu'});return true;}
   if(!$('mainMenu').classList.contains('hidden'))return false;
+  if(!$('info').classList.contains('hidden')&&document.querySelector('#info .close').dataset.go==='levels'){showLevels();return true;}
   show('mainMenu');return true;};
 window.appPaused=function(){if(G){G.paused=true;updHud();}if(SND.ctx)SND.ctx.suspend();};
 document.addEventListener('visibilitychange',()=>{if(!SND.ctx)return;if(document.hidden)SND.ctx.suspend();else SND.ctx.resume();});

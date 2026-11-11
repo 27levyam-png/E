@@ -1,7 +1,7 @@
 plugins { id 'com.android.application' }
 
 // גרסה: מתחילה ב-1.0.0 ועולה באחד בכל עדכון (כל ספרה מתגלגלת ב-10)
-def vName = '1.0.7'
+def vName = '1.0.8'
 def p = vName.tokenize('.')
 def vCode = p[0].toInteger() * 100 + p[1].toInteger() * 10 + p[2].toInteger()
 
