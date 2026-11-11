@@ -7,7 +7,8 @@
 <style>
 html{--dir:rtl}html[dir=ltr]{--dir:ltr}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-html,body{margin:0;height:100%;overflow:hidden;background:#1b3a57;font-family:"Segoe UI",Arial,sans-serif;color:#3b2a14;touch-action:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#1b3a57;font-family:"Segoe UI",Arial,sans-serif;color:#3b2a14;touch-action:manipulation}
+canvas#c{touch-action:none}
 canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .hidden{display:none!important}
 .screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:20}
@@ -19,7 +20,10 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 .btn[disabled]{opacity:.4}
 .btn.on{background:linear-gradient(#ffd98a,#e7a948);border-color:#a5561a}
 .btn.big{font-size:19px;padding:11px 22px;min-width:220px;display:block;margin:7px auto}
-.close{position:absolute;top:6px;left:6px;width:34px;height:34px;border-radius:8px;background:#b8321c;color:#fff;border:2px solid #6d1a0c;font-size:19px;font-weight:bold;line-height:28px;text-align:center;z-index:2}
+.pwrap{position:relative;max-width:94vw}
+.close{position:absolute;top:-12px;left:-12px;width:42px;height:42px;border-radius:10px;background:#b8321c;color:#fff;border:2px solid #6d1a0c;font-size:22px;font-weight:bold;line-height:36px;text-align:center;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,.45);touch-action:manipulation;cursor:pointer}
+.close::before{content:'';position:absolute;inset:-8px}
+.close:active{transform:scale(.92)}
 .ic{display:inline-block;vertical-align:middle}
 .ic svg{width:100%;height:100%;display:block}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0}
@@ -67,7 +71,7 @@ table.t{border-collapse:collapse;font-size:13px;width:100%}
 .stock span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
 .btn.mkr{line-height:1.25;padding:5px 9px}
 @media (max-height:430px){
- .parch{padding:8px 12px;max-height:96vh}.ttl{font-size:16px;padding:2px 14px;margin-bottom:5px}.close{width:30px;height:30px;line-height:24px;font-size:17px}
+ .parch{padding:8px 12px;max-height:96vh}.ttl{font-size:16px;padding:2px 14px;margin-bottom:5px}.close{width:38px;height:38px;line-height:32px;font-size:19px;top:-8px;left:-8px}
  .card{padding:4px 7px;margin:4px 0}.card b{font-size:14px}.small{font-size:11.5px}.btn{font-size:14px;padding:5px 10px}
  .btn.big{font-size:16px;padding:7px 18px;margin:5px auto}.logo{font-size:34px}.stock{font-size:13.5px;padding:3px 6px}
  .hb{width:36px;height:32px;font-size:17px}#dayTxt{font-size:16px}
@@ -104,8 +108,8 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 </div>
 
 <div id="setup" class="screen dim hidden">
+  <div class="pwrap"><div class="close" data-go="mainMenu">✕</div>
   <div class="parch">
-    <div class="close" data-go="mainMenu">✕</div>
     <div class="ttl" data-t="sTitle"></div>
     <div class="lbl"><span data-t="sIsl"></span><span class="val" id="vIsl">16</span></div>
     <input type="range" id="sIsl" min="8" max="60" step="1" value="16">
@@ -118,16 +122,16 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
     <label class="chk"><input type="checkbox" id="cPir" checked> <span data-t="sPir"></span></label>
     <label class="chk"><input type="checkbox" id="cHid" checked> <span data-t="sHid"></span></label>
     <button class="btn big" id="bStart" data-t="sStart"></button>
-  </div>
+  </div></div>
 </div>
 
-<div id="info" class="screen dim hidden"><div class="parch" id="infoBox"></div></div>
-<div id="panel" class="screen dim hidden"><div class="parch" id="panelBox"></div></div>
+<div id="info" class="screen dim hidden"><div class="pwrap"><div class="close" data-go="mainMenu">✕</div><div class="parch" id="infoBox"></div></div></div>
+<div id="panel" class="screen dim hidden"><div class="pwrap"><div class="close" data-act="close">✕</div><div class="parch" id="panelBox"></div></div></div>
 <div id="modal" class="screen dim hidden" style="z-index:30"><div class="parch" id="modalBox" style="width:min(460px,92vw);text-align:center"></div></div>
 
 <script>
 'use strict';
-const VERSION='1.0.5';
+const VERSION='1.0.6';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -607,7 +611,7 @@ function btn(act,label,dis,v){return `<button class="btn" data-act="${act}" ${v!
 function ownerTxt(is){if(is.pirate)return L('<b>☠️ אי השודדים</b>','<b>☠️ Pirate island</b>');if(is.owner<0)return is.center?L('אי מרכזי – לא ניתן לקנייה','Central island – cannot be bought'):L('אי פנוי','Free island');
   const P=G.players[is.owner];return `<span class="badge" style="background:${P.color}"></span> ${P.human?L('שלך','yours'):P.name}`;}
 function stockHtml(P){return `<div class="stock"><span>${L('המלאי שלך','Your stock')}:</span>${RES.map(r=>`<span class="${r==='gold'&&P.broke?'red':''}">${ic(r,18)} ${fmt(P.res[r])}</span>`).join('')}</div>`;}
-function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-act="close">✕</div>';
+function renderPanel(){const ui=G.ui,P=HUMAN();let h='';
   if(ui.type==='island'){const is=ui.is;const tn=L({wood:'אי עץ',stone:'אי אבן',iron:'אי ברזל'},{wood:'Wood island',stone:'Stone island',iron:'Iron island'})[is.res];
     h+=`<div class="ttl">${is.name}</div>`+(is.owner===0?'':`<div class="row"><b>${tn}</b> · ${ownerTxt(is)}</div>`);
     const sel=G.sel?`<div class="small">${L('ספינה נבחרת','Selected ship')}: ${SHIPS[G.sel.type].he}</div>`:'';
@@ -674,7 +678,9 @@ function act(a,v){const P=HUMAN(),ui=G.ui,is=ui&&ui.is;sfx('tap');
   case 'lang':setLang(v);break;
   }
   renderPanel();if(ui&&ui.type==='island'&&ui.tab==='mk')mkLabel();}
-$('panel').addEventListener('click',e=>{if(e.target.id==='panel'){closePanel();return;}const el=e.target.closest('[data-act]');if(!el||el.disabled)return;act(el.dataset.act,el.dataset.v);});
+document.addEventListener('pointerup',e=>{const c=e.target.closest('.close');if(!c)return;e.preventDefault();audioInit();sfx('tap');
+  if(c.dataset.act==='close')closePanel();else if(c.dataset.go)show(c.dataset.go);},true);
+$('panel').addEventListener('click',e=>{if(e.target.closest('.close'))return;if(e.target.id==='panel'){closePanel();return;}const el=e.target.closest('[data-act]');if(!el||el.disabled)return;act(el.dataset.act,el.dataset.v);});
 $('panel').addEventListener('input',e=>{if(e.target.id==='mkAmt'){G.ui.mk.amt=+e.target.value;mkLabel();}});
 let modalQ=[];
 function modal(title,body,btns){modalQ.push({title,body,btns:btns||[[L('אישור','OK')]]});if($('modal').classList.contains('hidden'))nextModal();}
@@ -724,8 +730,8 @@ return `<div class="ttl">הוראות</div><div class="help">
 
 /* ================= מסכים ================= */
 function show(id){['mainMenu','setup','info'].forEach(x=>$(x).classList.toggle('hidden',x!==id));}
-function showInfo(type){$('infoBox').innerHTML='<div class="close" data-go="mainMenu">✕</div>'+(type==='help'?helpHtml():type==='about'?aboutHtml():soundHtml());show('info');}
-document.addEventListener('click',e=>{const el=e.target.closest('[data-go]');if(!el)return;audioInit();sfx('tap');const g=el.dataset.go;
+function showInfo(type){$('infoBox').innerHTML=(type==='help'?helpHtml():type==='about'?aboutHtml():soundHtml());show('info');}
+document.addEventListener('click',e=>{if(e.target.closest('.close'))return;const el=e.target.closest('[data-go]');if(!el)return;audioInit();sfx('tap');const g=el.dataset.go;
   if(g==='help'||g==='about'||g==='sound')showInfo(g);else show(g);});
 $('infoBox').addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;if(el.dataset.act==='lang'){setLang(el.dataset.v);showInfo('sound');return;}if(el.dataset.act!=='snd')return;SND.cfg[el.dataset.v]=!SND.cfg[el.dataset.v];saveSnd();if(el.dataset.v==='music')setMusic();showInfo('sound');});
 $('bLevels').onclick=()=>{audioInit();toast2(L('השלבים יגיעו בגרסה הבאה','Levels are coming in a later version'));};
