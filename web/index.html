@@ -126,7 +126,7 @@ table.t td,table.t th{border:1px solid #b89458;padding:2px 5px;text-align:center
 
 <script>
 'use strict';
-const VERSION='1.0.3';
+const VERSION='1.0.4';
 const DAY=4;                 // שניות ליום
 const KN=600/12/30;          // יחידות עולם לשנייה לכל קשר (פינאס 30 קשר = 12 שניות למרחק 600)
 const RES=['gold','wood','stone','iron','steel'];
@@ -286,6 +286,7 @@ function arrive(s){
     for(const k in w.loot)P.res[k]+=w.loot[k];
     if(P.human){sfx('coins');modal(L('ספינה טרופה','Ship wreck'),`<p>${L('מצאנו משאבים שימושיים:','We found these useful resources:')}</p><div class="row" style="justify-content:center">${costHtml(w.loot)}</div>`);}break;}
   case 'bribe':{s.order=null;if(!(t.owner>=0&&t.owner!==s.owner)){if(P.human)toast(L('האי כבר לא שייך ליריב','The island no longer belongs to an enemy'));break;}
+    if(t.b.fortress){if(P.human)toast(L('לאי יש מבצר – הוא מוגן ואי אפשר לקנות אותו','The island has a fortress – it is protected and cannot be bought'));break;}
     const v=islandValue(t);if(P.res.gold<v){if(P.human)toast(L(`אין מספיק כסף. נדרש ${fmt(v)}`,`Not enough gold. ${fmt(v)} needed`));break;}
     P.res.gold-=v;s.dead=true;transfer(t,s.owner,'diplomat');break;}
   case 'attack':{s.order=null;if(t.pirate)killPirates(s.owner);break;}
@@ -435,7 +436,7 @@ function aiThink(P){
       let best=null,bv=-1e9;for(const i of srcs){const n=G.ships.filter(q=>q.order&&q.order.src===i).length;const v=i.storage+i.prod*6-dist(s,i)*.15-n*160+(i.res==='iron'&&!mine.some(m=>m.res==='iron')?300:0);if(v>bv){bv=v;best=i;}}
       if(best)sendCollect(s,best);}}
   // דיפלומט ומלחמה
-  for(const s of ships.filter(s=>!s.order&&s.type==='diplomat')){const c=G.islands.filter(i=>i.owner>=0&&i.owner!==me&&islandValue(i)<=R.gold-(diff===2?150:400));
+  for(const s of ships.filter(s=>!s.order&&s.type==='diplomat')){const c=G.islands.filter(i=>i.owner>=0&&i.owner!==me&&!i.b.fortress&&islandValue(i)<=R.gold-(diff===2?150:400));
     if(c.length){c.sort((a,b)=>islandValue(a)+dist(s,a)-islandValue(b)-dist(s,b));order(s,'bribe',c[0]);}}
   for(const s of ships.filter(s=>!s.order&&s.type==='warrior'))if(!G.pir.dead)order(s,'attack',G.pir.island);
 }
@@ -619,7 +620,8 @@ function renderPanel(){const ui=G.ui,P=HUMAN();let h='<div class="close" data-ac
       if(!ownedBy(0).length)h+=`<div class="small red">${L('צריך אי משלך כדי לפרוק בו סחורה.','You need an island of your own to unload goods.')}</div>`;h+=sel;}
     else if(is.owner!==0){const v=islandValue(is);
       h+=`<div class="row">${L('שווי האי','Island value')}: <b>${fmt(v)}</b> ${ic('gold')}</div><div class="row small">${L('מבנים','Buildings')}: ${BKEYS.filter(k=>is.b[k]).map(k=>BLD[k].he).join(', ')||L('אין','none')}</div>`;
-      h+=`<div class="card"><div class="grow"><b>${L('קניית האי בדיפלומט','Buy with a diplomat')}</b><div class="small">${L('הדיפלומט ישלם את שווי האי כשיגיע אליו, ונעלם אחרי הקנייה.','The diplomat pays the island value when it arrives, and is used up by the purchase.')}</div></div>${btn('bribe',L('🤝 שלח דיפלומט','🤝 Send diplomat'),!shipsOf(0).some(s=>s.type==='diplomat'))}</div>`+sel;}
+      if(is.b.fortress)h+=`<div class="card"><div class="grow"><b>🛡️ ${L('האי מוגן','Protected island')}</b><div class="small">${L('לאי יש מבצר, ולכן אי אפשר לקנות אותו בדיפלומט.','This island has a fortress, so it cannot be bought with a diplomat.')}</div></div></div>`+sel;
+      else h+=`<div class="card"><div class="grow"><b>${L('קניית האי בדיפלומט','Buy with a diplomat')}</b><div class="small">${L('הדיפלומט ישלם את שווי האי כשיגיע אליו, ונעלם אחרי הקנייה.','The diplomat pays the island value when it arrives, and is used up by the purchase.')}</div></div>${btn('bribe',L('🤝 שלח דיפלומט','🤝 Send diplomat'),!shipsOf(0).some(s=>s.type==='diplomat'))}</div>`+sel;}
     else{const d=islandDaily(is);
       h+=`<div class="row"><b>${tn}</b> · ${L('שווי','Value')}: <b>${fmt(islandValue(is))}</b> ${ic('gold',16)} · ${L('ייצור יומי','Daily production')}: <b>+${d.p}</b> ${ic(is.res,16)} · ${L('כסף ליום','Gold per day')}: <b class="${d.g<0?'red':'green'}">${d.g>0?'+':''}${d.g}</b> ${ic('gold',16)}</div>`;
       if(G.sel)h+=`<div class="row">${btn('move',L(`⚓ שלח לכאן את ה${SHIPS[G.sel.type].he}${G.sel.cargo?' ופרוק':''}`,`⚓ Send the ${SHIPS[G.sel.type].he} here${G.sel.cargo?' and unload':''}`))}</div>`;
@@ -702,7 +704,7 @@ if(LANG==='en')return `<div class="ttl">How to play</div><div class="help">
 <h4>⛵ Ships</h4>${st}
 <p>The Diplomat and the Warrior can only be built at the shipyard of an island with a fortress. Ships that collide push each other: a heavier, faster ship pushes harder.</p>
 <h4>☠️ Pirates</h4><p>Right after the first island is bought, the pirates set out to attack. They steal 60%–80% of all resources and destroy one building. 40 seconds after returning they sail again. A fortress sinks their ship. A Warrior that reaches the pirate island destroys them.</p>
-<h4>🤝 Diplomat</h4><p>The only way to buy an island another player owns. The price starts at 1,500 and rises by 10 each day and by half the gold cost of each building on the island. The diplomat is used up by the purchase.</p>
+<h4>🤝 Diplomat</h4><p>The only way to buy an island another player owns. The price starts at 1,500 and rises by 10 each day and by half the gold cost of each building on the island. The diplomat is used up by the purchase. An island with a fortress is protected and cannot be bought.</p>
 <h4>💸 Out of gold</h4><p>When gold runs out, ships and production slow down by a third.</p>
 <h4>🪦 Ship wrecks</h4><p>There are 3 ship wrecks at the start of the game. Send a ship to one and you will find resources.</p></div>`;
 return `<div class="ttl">הוראות</div><div class="help">
@@ -715,7 +717,7 @@ return `<div class="ttl">הוראות</div><div class="help">
 <h4>⛵ ספינות</h4>${st}
 <p>דיפלומט וספינת מלחמה נבנים רק במספנה של אי שיש בו מבצר. ספינות שמתנגשות דוחפות זו את זו: ספינה כבדה ומהירה דוחפת חזק יותר.</p>
 <h4>☠️ שודדים</h4><p>מיד אחרי קניית האי הראשון השודדים יוצאים לתקוף. הם גונבים 60%–80% מכל המשאבים והורסים מבנה אחד. 40 שניות אחרי שחזרו הם יוצאים שוב. מבצר מטביע את ספינתם. ספינת מלחמה שמגיעה לאי השודדים משמידה אותם.</p>
-<h4>🤝 דיפלומט</h4><p>הדרך היחידה לקנות אי של שחקן אחר. המחיר מתחיל ב-1,500 ועולה ב-10 כל יום ובמחצית מעלות הכסף של כל מבנה באי. הדיפלומט נעלם אחרי הקנייה.</p>
+<h4>🤝 דיפלומט</h4><p>הדרך היחידה לקנות אי של שחקן אחר. המחיר מתחיל ב-1,500 ועולה ב-10 כל יום ובמחצית מעלות הכסף של כל מבנה באי. הדיפלומט נעלם אחרי הקנייה. אי שיש בו מבצר מוגן, ואי אפשר לקנות אותו.</p>
 <h4>💸 חוסר כסף</h4><p>כשהכסף נגמר, הספינות והייצור יורדים בשליש.</p>
 <h4>🪦 ספינות טרופות</h4><p>בתחילת המשחק יש 3 ספינות טרופות בים. שלח אליהן ספינה ותמצא משאבים.</p></div>`;}
 
